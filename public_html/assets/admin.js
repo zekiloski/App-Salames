@@ -24,8 +24,8 @@ const leerPrueba = () => { try { return JSON.parse(localStorage.getItem(KEY)) ||
 const guardarPrueba = db => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} };
 const azar = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
 
-function apiPrueba(body) {
-  const db = leerPrueba(), err = m => { alert(m); throw new Error(m); };
+function apiPrueba(body, silencioso) {
+  const db = leerPrueba(), err = m => { if (!silencioso) alert(m); throw new Error(m); };
   const emp = id => db.empresas.find(e => e.id == id) || err('No existe');
   if (!body) {
     const camaras = db.camaras.map(c => ({...c, empresa: emp(c.empresa_id).nombre,
@@ -75,12 +75,13 @@ function entrarPrueba() {
   cargar();
 }
 
-async function api(body) {
-  if (PRUEBA) return apiPrueba(body);
+// silencioso: no muestra alert (el modal muestra el error adentro)
+async function api(body, silencioso) {
+  if (PRUEBA) return apiPrueba(body, silencioso);
   const r = await fetch('api/admin.php', body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {cache: 'no-store'});
   let d = {}; try { d = await r.json(); } catch (e) {}
   if (r.status == 401) { location.reload(); throw new Error('sesión'); }
-  if (!r.ok) { alert(d.error || 'Error ' + r.status); throw new Error(d.error); }
+  if (!r.ok) { if (!silencioso) alert(d.error || 'Error ' + r.status); throw new Error(d.error || 'Error ' + r.status); }
   return d;
 }
 
@@ -124,33 +125,19 @@ function renderDetalle() {
       <button class="btn ${e.estado == 'activa' ? 'warn' : 'pri'}" data-a="estado">${ic(e.estado == 'activa' ? 'pausa' : 'ok')}${e.estado == 'activa' ? 'Suspender cuenta' : 'Reactivar cuenta'}</button></div>
     ${e.estado == 'suspendida' ? '<p class="note">Cuenta suspendida: los usuarios no pueden entrar al panel. Los equipos siguen guardando lecturas.</p>' : ''}
 
-    <h3 style="margin-top:16px">${ic('termometro')}Cámaras</h3>
+    <div class="row sub-row"><h3>${ic('termometro')}Cámaras</h3><button class="btn" data-a="nuevaCamara">${ic('mas')}Agregar cámara</button></div>
     <div class="scroll"><table class="stack"><thead><tr><th>Cámara</th><th>Etapa</th><th class="n">Temp.</th><th class="n">Humedad</th><th>Último dato</th><th></th></tr></thead><tbody>
     ${cams.map(c => `<tr><td><b>${esc(c.nombre)}</b>${c.activa ? '' : ' <span class="tag f">inactiva</span>'}</td><td>${esc(c.etapa)}</td>
       <td class="n">${c.t_min}–${c.t_max} °C</td><td class="n">${c.h_min}–${c.h_max} %</td>
       <td class="${c.sin_datos && c.activa ? 'bad' : ''}">${hace(c.ultima_lectura)}</td>
       <td class="n acc"><button class="btn sm" data-a="rangos" data-id="${c.id}">${ic('termometro')}Rangos</button> <button class="btn sm" data-a="token" data-id="${c.id}">${ic('llave')}Nuevo token</button> <button class="btn sm" data-a="activa" data-id="${c.id}">${ic(c.activa ? 'pausa' : 'ok')}${c.activa ? 'Desactivar' : 'Activar'}</button></td></tr>`).join('') || '<tr><td colspan="6">Sin cámaras.</td></tr>'}
     </tbody></table></div>
-    <form class="form inline" id="fCamara">
-      <label>Nueva cámara<input name="nombre" required placeholder="Cámara 1 · Secado"></label>
-      <label>Etapa<input name="etapa" value="Secado"></label>
-      <label>Temp. mín<input name="t_min" type="number" step="0.1" value="12" required></label>
-      <label>Temp. máx<input name="t_max" type="number" step="0.1" value="15" required></label>
-      <label>Hum. mín<input name="h_min" type="number" step="0.1" value="75" required></label>
-      <label>Hum. máx<input name="h_max" type="number" step="0.1" value="85" required></label>
-      <button class="btn pri">Agregar cámara</button>
-    </form>
 
-    <h3 style="margin-top:20px">${ic('usuarios')}Usuarios</h3>
+    <div class="row sub-row"><h3>${ic('usuarios')}Usuarios</h3><button class="btn" data-a="nuevoUsuario">${ic('mas')}Agregar usuario</button></div>
     <div class="scroll"><table class="stack"><thead><tr><th>Nombre</th><th>Mail</th><th>Último ingreso</th><th></th></tr></thead><tbody>
     ${users.map(u => `<tr><td><b>${esc(u.nombre)}</b>${u.activo ? '' : ' <span class="tag f">de baja</span>'}</td><td>${esc(u.email)}</td><td>${hace(u.ultimo_login)}</td>
       <td class="n acc"><button class="btn sm" data-a="clave" data-id="${u.id}">${ic('llave')}Nueva contraseña</button> <button class="btn sm" data-a="uactivo" data-id="${u.id}">${ic(u.activo ? 'pausa' : 'ok')}${u.activo ? 'Dar de baja' : 'Reactivar'}</button></td></tr>`).join('') || '<tr><td colspan="4">Sin usuarios.</td></tr>'}
     </tbody></table></div>
-    <form class="form inline" id="fUsuario">
-      <label>Nombre<input name="nombre" placeholder="Encargado"></label>
-      <label>Mail<input name="email" type="email" required></label>
-      <button class="btn pri">Crear usuario</button>
-    </form>
   </div>`;
 }
 
@@ -159,29 +146,64 @@ const elegir = tr => { sel = +tr.dataset.id; renderDetalle(); $('#detalle').scro
 $('#empresas').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr && !e.target.closest('a')) elegir(tr); });
 $('#empresas').addEventListener('keydown', e => { const tr = e.target.closest('tr[data-id]'); if (tr && e.key == 'Enter') elegir(tr); });
 
-$('#fEmpresa').addEventListener('submit', async e => {
-  e.preventDefault();
-  const f = Object.fromEntries(new FormData(e.target));
-  const r = await api({accion: 'empresa_crear', ...f});
-  e.target.reset(); sel = r.id; await cargar();
+/* ---------- Ventanas (modales) para dar de alta ---------- */
+function abrirModal(id) {
+  const m = $('#' + id), f = m.querySelector('form');
+  f.reset(); m.querySelector('.err').textContent = '';
+  const e = D && D.empresas.find(x => x.id == sel);
+  m.querySelectorAll('.para-empresa').forEach(s => s.textContent = e ? e.nombre : '');
+  if (id == 'mCamara') rangosEtapa();
+  m.showModal();
+  f.querySelector('input,select').focus();
+}
+document.querySelectorAll('dialog.modal').forEach(m => {
+  m.querySelectorAll('[data-cerrar]').forEach(b => b.addEventListener('click', () => m.close()));
+  m.addEventListener('click', e => { if (e.target == m) m.close(); });  // tocar afuera cierra
 });
+document.querySelectorAll('[data-modal]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); abrirModal(b.dataset.modal); }));
 
-$('#detalle').addEventListener('submit', async e => {
-  e.preventDefault();
-  const f = Object.fromEntries(new FormData(e.target));
-  if (e.target.id == 'fCamara') {
-    const r = await api({accion: 'camara_crear', empresa_id: sel, ...f});
-    secreto(`Cámara creada. Token para el ESP32 (<code>DEVICE_TOKEN</code>): <code>${esc(r.device_token)}</code>`);
-  } else if (e.target.id == 'fUsuario') {
-    const r = await api({accion: 'usuario_crear', empresa_id: sel, ...f});
-    secreto(`Usuario creado. Mail: <code>${esc(r.email)}</code> · Contraseña: <code>${esc(r.password)}</code>`);
-  }
+// Envía el formulario del modal; si la API rechaza, muestra el error adentro del modal sin cerrarlo
+async function enviar(form, fn) {
+  const err = form.querySelector('.err'), btn = form.querySelector('[type=submit]');
+  err.textContent = ''; btn.disabled = true;
+  try { await fn(Object.fromEntries(new FormData(form))); form.closest('dialog').close(); }
+  catch (e) { err.textContent = e.message || 'No se pudo guardar.'; }
+  finally { btn.disabled = false; }
   await cargar();
-});
+}
+
+// Rangos de referencia por etapa: se completan solos al elegir la etapa (se pueden cambiar)
+const ETAPAS = {Estufado: [20, 24, 88, 95], Secado: [12, 15, 75, 85], Estacionamiento: [10, 14, 70, 80]};
+function rangosEtapa() {
+  const f = $('#fCamara'), r = ETAPAS[f.etapa.value];
+  if (r) ['t_min', 't_max', 'h_min', 'h_max'].forEach((k, i) => f[k].value = r[i]);
+}
+$('#fCamara').etapa.addEventListener('change', rangosEtapa);
+
+$('#fEmpresa').addEventListener('submit', e => { e.preventDefault(); enviar(e.target, async f => {
+  const r = await api({accion: 'empresa_crear', nombre: f.nombre, contacto: f.contacto}, true);
+  sel = r.id;
+  if (f.email) {
+    const u = await api({accion: 'usuario_crear', empresa_id: r.id, email: f.email, nombre: f.responsable}, true);
+    secreto(`Cliente creado. Pasale al salamero estos datos para entrar: Mail <code>${esc(u.email)}</code> · Contraseña <code>${esc(u.password)}</code>`);
+  }
+}); });
+
+$('#fCamara').addEventListener('submit', e => { e.preventDefault(); enviar(e.target, async f => {
+  const r = await api({accion: 'camara_crear', empresa_id: sel, ...f}, true);
+  secreto(`Cámara creada. Token para el ESP32 (<code>DEVICE_TOKEN</code>): <code>${esc(r.device_token)}</code>`);
+}); });
+
+$('#fUsuario').addEventListener('submit', e => { e.preventDefault(); enviar(e.target, async f => {
+  const r = await api({accion: 'usuario_crear', empresa_id: sel, ...f}, true);
+  secreto(`Usuario creado. Mail: <code>${esc(r.email)}</code> · Contraseña: <code>${esc(r.password)}</code>`);
+}); });
 
 $('#detalle').addEventListener('click', async e => {
   const b = e.target.closest('button[data-a]'); if (!b) return;
   const id = +b.dataset.id, a = b.dataset.a;
+  if (a == 'nuevaCamara') return abrirModal('mCamara');
+  if (a == 'nuevoUsuario') return abrirModal('mUsuario');
   if (a == 'estado') {
     const e2 = D.empresas.find(x => x.id == sel), nuevo = e2.estado == 'activa' ? 'suspendida' : 'activa';
     if (nuevo == 'suspendida' && !confirm(`¿Suspender a ${e2.nombre}? No van a poder entrar al panel hasta que la reactives.`)) return;

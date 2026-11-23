@@ -31,7 +31,7 @@
     <div class="tabs">
       <a href="#s-caidos"><svg class="ic" aria-hidden="true"><use href="#i-sinSenal"/></svg>Equipos sin datos<span class="badge" id="caidosBadge" hidden></span></a>
       <a href="#s-clientes"><svg class="ic" aria-hidden="true"><use href="#i-empresa"/></svg>Clientes</a>
-      <a href="#fEmpresa"><svg class="ic" aria-hidden="true"><use href="#i-usuarios"/></svg>Nueva empresa</a>
+      <a href="#nuevo-cliente" data-modal="mEmpresa"><svg class="ic" aria-hidden="true"><use href="#i-mas"/></svg>Nuevo cliente</a>
       <a href="index.html"><svg class="ic" aria-hidden="true"><use href="#i-vivo"/></svg>Panel del salamero</a>
     </div>
     <div class="user" id="user" hidden><span id="userName"></span><button class="btn sm" id="salir"><svg class="ic" aria-hidden="true"><use href="#i-salir"/></svg>Salir</button></div>
@@ -59,17 +59,60 @@
   </div>
 
   <div class="panel" id="s-clientes" style="margin-top:16px">
-    <div class="row"><h3 style="margin:0"><svg class="ic" aria-hidden="true"><use href="#i-empresa"/></svg>Clientes</h3></div>
+    <div class="row"><h3 style="margin:0"><svg class="ic" aria-hidden="true"><use href="#i-empresa"/></svg>Clientes</h3>
+      <button class="btn pri" data-modal="mEmpresa"><svg class="ic" aria-hidden="true"><use href="#i-mas"/></svg>Nuevo cliente</button></div>
+    <p class="note" style="margin-top:0">Tocá un cliente para ver y administrar sus cámaras y usuarios.</p>
     <div class="scroll"><table class="stack"><thead><tr><th>Empresa</th><th>Contacto</th><th>Estado</th><th class="n">Cámaras</th><th class="n">Usuarios</th><th></th></tr></thead><tbody id="empresas"></tbody></table></div>
-    <form class="form inline" id="fEmpresa">
-      <label>Nueva empresa<input name="nombre" required placeholder="Nombre del salamero"></label>
-      <label>Contacto<input name="contacto" placeholder="Teléfono o mail"></label>
-      <button class="btn pri">Dar de alta</button>
-    </form>
   </div>
 
   <div id="detalle"></div>
 </main>
+
+<dialog class="modal" id="mEmpresa" aria-labelledby="mEmpresaT">
+  <form class="form" id="fEmpresa">
+    <div class="modal-head"><h2 id="mEmpresaT"><svg class="ic" aria-hidden="true"><use href="#i-empresa"/></svg>Nuevo cliente</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <label>Nombre del salamero o empresa *<input name="nombre" required placeholder="Ej.: Chacinados Don Kiko"></label>
+    <label>Teléfono o mail de contacto<input name="contacto" placeholder="Ej.: 3572 401234"></label>
+    <fieldset class="opcional">
+      <legend>Acceso para el salamero <span>(opcional)</span></legend>
+      <p class="note">Si completás el mail, se crea su usuario y la app te muestra la contraseña para pasársela.</p>
+      <label>Nombre del responsable<input name="responsable" placeholder="Ej.: Sergio"></label>
+      <label>Mail para entrar a la app<input name="email" type="email" placeholder="salamero@mail.com"></label>
+    </fieldset>
+    <p class="err" role="alert"></p>
+    <div class="acciones"><button type="button" class="btn" data-cerrar>Cancelar</button><button type="submit" class="btn pri">Crear cliente</button></div>
+  </form>
+</dialog>
+
+<dialog class="modal" id="mCamara" aria-labelledby="mCamaraT">
+  <form class="form" id="fCamara">
+    <div class="modal-head"><h2 id="mCamaraT"><svg class="ic" aria-hidden="true"><use href="#i-termometro"/></svg>Nueva cámara</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <p class="note para">Para <b class="para-empresa"></b></p>
+    <label>Nombre de la cámara *<input name="nombre" required placeholder="Ej.: Cámara 1 · Secado"></label>
+    <label>Etapa<select name="etapa"><option>Estufado</option><option selected>Secado</option><option>Estacionamiento</option></select></label>
+    <p class="note">Los rangos se completan solos según la etapa. Podés cambiarlos.</p>
+    <div class="dos">
+      <label>Temperatura mínima (°C)<input name="t_min" type="number" step="0.1" required></label>
+      <label>Temperatura máxima (°C)<input name="t_max" type="number" step="0.1" required></label>
+      <label>Humedad mínima (%)<input name="h_min" type="number" step="0.1" required></label>
+      <label>Humedad máxima (%)<input name="h_max" type="number" step="0.1" required></label>
+    </div>
+    <p class="err" role="alert"></p>
+    <div class="acciones"><button type="button" class="btn" data-cerrar>Cancelar</button><button type="submit" class="btn pri">Crear cámara</button></div>
+  </form>
+</dialog>
+
+<dialog class="modal" id="mUsuario" aria-labelledby="mUsuarioT">
+  <form class="form" id="fUsuario">
+    <div class="modal-head"><h2 id="mUsuarioT"><svg class="ic" aria-hidden="true"><use href="#i-usuarios"/></svg>Nuevo usuario</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <p class="note para">Para <b class="para-empresa"></b></p>
+    <label>Nombre<input name="nombre" placeholder="Ej.: Encargado de la planta"></label>
+    <label>Mail para entrar a la app *<input name="email" type="email" required placeholder="encargado@mail.com"></label>
+    <p class="note">La contraseña la genera la app y te la muestra una sola vez.</p>
+    <p class="err" role="alert"></p>
+    <div class="acciones"><button type="button" class="btn" data-cerrar>Cancelar</button><button type="submit" class="btn pri">Crear usuario</button></div>
+  </form>
+</dialog>
 <script src="assets/ui.js"></script>
 <script src="assets/admin.js"></script>
 </body>
