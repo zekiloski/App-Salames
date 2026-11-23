@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Salame Monitor · Administrador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Archivo+Narrow:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Salame Monitor</h1>
+    <div class="sub">Panel de administrador</div>
+    <div class="user" id="user" hidden><span id="userName"></span><button class="btn sm" id="salir">Salir</button></div>
+  </div>
+  <nav></nav>
+</header>
+
+<section class="band login" id="login" hidden>
+  <form class="panel" id="loginForm">
+    <h2>Ingresar</h2>
+    <label>Mail<input type="email" name="email" autocomplete="username" required></label>
+    <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
+    <p class="err" id="loginErr" role="alert"></p>
+    <button class="btn pri">Entrar</button>
+  </form>
+</section>
+
+<main class="band" id="admin" hidden>
+  <div class="secreto" id="secreto" hidden role="status"></div>
+
+  <div class="panel">
+    <h3>Equipos sin datos</h3>
+    <div id="caidos"></div>
+  </div>
+
+  <div class="panel" style="margin-top:16px">
+    <div class="row"><h3 style="margin:0">Clientes</h3></div>
+    <div class="scroll"><table><thead><tr><th>Empresa</th><th>Contacto</th><th>Estado</th><th class="n">Cámaras</th><th class="n">Usuarios</th><th></th></tr></thead><tbody id="empresas"></tbody></table></div>
+    <form class="form inline" id="fEmpresa">
+      <label>Nueva empresa<input name="nombre" required placeholder="Nombre del salamero"></label>
+      <label>Contacto<input name="contacto" placeholder="Teléfono o mail"></label>
+      <button class="btn pri">Dar de alta</button>
+    </form>
+  </div>
+
+  <div id="detalle"></div>
+</main>
+<script src="assets/admin.js"></script>
+</body>
+</html>

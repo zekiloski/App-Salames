@@ -1,14 +1,25 @@
 <?php
-// Devuelve todo lo que muestra el panel: cámaras, lecturas 48 h, lotes y alertas.
-// GET api/estado.php
+// Devuelve todo lo que muestra el panel: cámaras, lecturas 48 h, lotes y alertas
+// de la empresa del usuario logueado.
+// GET api/estado.php                 (cliente)
+// GET api/estado.php?empresa_id=3    (admin: ver el panel de un cliente)
 declare(strict_types=1);
 require __DIR__ . '/db.php';
 
+$u = usuario();
+$emp = empresa_de($u);
 $pdo = db();
 $num = fn($v) => $v === null ? null : (float)$v;
 
+$q = $pdo->prepare('SELECT nombre FROM empresas WHERE id = ?');
+$q->execute([$emp]);
+$empresa = $q->fetchColumn();
+if ($empresa === false) json_out(['error' => 'Empresa inexistente'], 404);
+
 // Cámaras (sin el token)
-$camaras = $pdo->query('SELECT id, nombre, etapa, t_min, t_max, h_min, h_max FROM camaras WHERE activa = 1 ORDER BY id')->fetchAll();
+$st = $pdo->prepare('SELECT id, nombre, etapa, t_min, t_max, h_min, h_max FROM camaras WHERE empresa_id = ? AND activa = 1 ORDER BY id');
+$st->execute([$emp]);
+$camaras = $st->fetchAll();
 foreach ($camaras as &$c) foreach (['t_min','t_max','h_min','h_max'] as $k) $c[$k] = (float)$c[$k];
 unset($c);
 
@@ -40,7 +51,9 @@ $fueraSt = $pdo->prepare(
   'SELECT COUNT(*) FROM lecturas WHERE camara_id = ? AND ts >= ?
      AND (temp < ? OR temp > ? OR hum < ? OR hum > ?)');
 
-foreach ($pdo->query("SELECT * FROM lotes WHERE estado = 'en_proceso' ORDER BY fecha_inicio") as $l) {
+$lotesSt = $pdo->prepare("SELECT * FROM lotes WHERE empresa_id = ? AND estado = 'en_proceso' ORDER BY fecha_inicio");
+$lotesSt->execute([$emp]);
+foreach ($lotesSt->fetchAll() as $l) {
     $ini = (float)$l['peso_inicial_g'];
     $curvaSt->execute([$l['camara_id'], $l['fecha_inicio']]);
     $curva = [['dia' => 0, 'perdida' => 0]];
@@ -70,10 +83,12 @@ foreach ($pdo->query("SELECT * FROM lotes WHERE estado = 'en_proceso' ORDER BY f
 
 // Alertas recientes
 $alertas = [];
-foreach ($pdo->query('SELECT ts, nivel, mensaje FROM alertas ORDER BY ts DESC, id DESC LIMIT 10') as $a) {
+$st = $pdo->prepare('SELECT ts, nivel, mensaje FROM alertas WHERE empresa_id = ? ORDER BY ts DESC, id DESC LIMIT 10');
+$st->execute([$emp]);
+foreach ($st->fetchAll() as $a) {
     $hoy = date('Y-m-d') === substr($a['ts'], 0, 10);
     $alertas[] = ['nivel' => $a['nivel'], 'mensaje' => $a['mensaje'],
                   'hora' => ($hoy ? '' : date('d/m ', strtotime($a['ts']))) . substr($a['ts'], 11, 5)];
 }
 
-json_out(compact('camaras', 'lecturas', 'lotes', 'alertas'));
+json_out(compact('empresa', 'camaras', 'lecturas', 'lotes', 'alertas'));

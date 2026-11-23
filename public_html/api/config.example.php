@@ -6,11 +6,14 @@ return [
     'db_name'   => 'u000000000_salame',
     'db_user'   => 'u000000000_salame',
     'db_pass'   => 'CAMBIAR',
-    // Clave para cargar y editar lotes desde api/lotes.php (cualquier texto largo y secreto)
-    'admin_key' => 'CAMBIAR-por-una-clave-larga',
+    // Clave para crear el primer administrador desde api/setup.php (cualquier texto largo y secreto).
+    // Después de crearlo podés borrarla: setup.php deja de funcionar cuando ya existe un admin.
+    'setup_key' => 'CAMBIAR-por-una-clave-larga',
     'timezone'  => 'America/Argentina/Cordoba',
     // Minutos entre alertas repetidas de la misma cámara
     'alerta_cooldown_min' => 30,
     // Cada cuántos minutos manda datos el ESP32 (para calcular horas fuera de rango)
     'intervalo_min' => 5,
+    // Minutos sin datos para considerar que un equipo está caído (panel de administrador)
+    'sin_datos_min' => 30,
 ];

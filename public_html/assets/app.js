@@ -1,10 +1,12 @@
 /* Salame Monitor - frontend
- * Intenta leer datos reales desde api/estado.php.
- * Si la API no responde (o no hay cámaras cargadas), arranca en modo demo con datos simulados.
+ * Pide iniciar sesión y lee los datos de la empresa del usuario desde api/estado.php.
+ * Si la API no responde (por ejemplo, sin PHP), o se toca "Ver demo", arranca en modo demo con datos simulados.
+ * Un administrador puede ver el panel de un cliente con index.html?empresa_id=N.
  */
 {
 const $ = s => document.querySelector(s);
-const API = 'api/estado.php';
+const EMP = new URLSearchParams(location.search).get('empresa_id');
+const API = 'api/estado.php' + (EMP ? '?empresa_id=' + encodeURIComponent(EMP) : '');
 const POLL_MS = 60000;
 
 const PARAMS = [
@@ -63,10 +65,26 @@ function demoState() {
 /* ---------- Carga de datos reales ---------- */
 async function loadReal() {
   const r = await fetch(API, {cache: 'no-store'});
+  if (r.status == 401 || r.status == 403) { location.reload(); throw new Error('sesión'); }  // vencida o suspendida
   if (!r.ok) throw new Error('HTTP ' + r.status);
-  const d = await r.json();
-  if (!d.camaras || !d.camaras.length) throw new Error('sin cámaras');
-  return d;
+  return r.json();
+}
+
+/* ---------- Sesión ---------- */
+async function api(url, body) {
+  const r = await fetch(url, body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {cache: 'no-store'});
+  let d = {}; try { d = await r.json(); } catch (e) {}
+  return {status: r.status, d};
+}
+function showUser(u) {
+  $('#user').hidden = false;
+  $('#userName').textContent = u.nombre;
+  $('#adminLink').hidden = u.rol != 'admin';
+}
+function showLogin(msg) {
+  document.body.classList.add('login-on');
+  $('#login').hidden = false; $('#modo').hidden = true;
+  $('#loginErr').textContent = msg || '';
 }
 
 /* ---------- Render ---------- */
@@ -175,7 +193,14 @@ function fillCams() {
   $('#cam').innerHTML = S.camaras.map((c, i) => `<option value="${i}">${esc(c.nombre)}</option>`).join('');
   $('#cam').value = cam;
 }
-function renderAll() { $('#camTitle').textContent = C().nombre; drawChart(); renderKpis(); renderAlerts(); renderLots(); }
+function renderAll() {
+  if (!S.camaras.length) {
+    $('#camTitle').textContent = 'Todavía no hay cámaras cargadas';
+    svg.innerHTML = ''; $('#kpis').innerHTML = ''; renderAlerts(); renderLots(); return;
+  }
+  if (cam >= S.camaras.length) cam = 0;
+  $('#camTitle').textContent = C().nombre; drawChart(); renderKpis(); renderAlerts(); renderLots();
+}
 
 /* ---------- Simulación (solo demo) ---------- */
 function tickDemo() {
@@ -210,16 +235,44 @@ $('#mats').innerHTML = MATS.map(m => `<div class="mat"><div class="k">${m[0]}</d
 $('#params').innerHTML = PARAMS.map(p => `<tr><td>${p[0]}</td><td class="n">${p[1]}</td><td class="n">${p[2]}</td><td>${p[3]}</td></tr>`).join('');
 
 /* ---------- Arranque ---------- */
-(async () => {
-  try {
-    S = await loadReal(); modo = 'real';
-    $('#modo').textContent = 'Datos en vivo'; $('#modo').classList.add('real');
-    $('#fail').hidden = true;
-    setInterval(async () => { try { S = await loadReal(); if (cam >= S.camaras.length) cam = 0; renderAll(); } catch (e) { console.warn(e); } }, POLL_MS);
-  } catch (e) {
-    S = demoState(); modo = 'demo';
-    setInterval(tickDemo, 2500);
-  }
+function startDemo() {
+  document.body.classList.remove('login-on'); $('#login').hidden = true; $('#modo').hidden = false;
+  S = demoState(); modo = 'demo';
+  setInterval(tickDemo, 2500);
   fillCams(); renderAll();
+}
+
+async function startReal() {
+  S = await loadReal(); modo = 'real';
+  document.body.classList.remove('login-on'); $('#login').hidden = true; $('#modo').hidden = false;
+  $('#modo').textContent = 'Datos en vivo'; $('#modo').classList.add('real');
+  $('#empresa').textContent = S.empresa;
+  $('#fail').hidden = true;
+  setInterval(async () => { try { S = await loadReal(); renderAll(); } catch (e) { console.warn(e); } }, POLL_MS);
+  fillCams(); renderAll();
+}
+
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  $('#loginErr').textContent = '';
+  const {status, d} = await api('api/auth.php', {email: f.get('email'), password: f.get('password')});
+  if (status == 200) { showUser(d); startReal().catch(err => showLogin('No se pudieron cargar los datos.')); }
+  else showLogin(d.error || 'No se pudo ingresar.');
+});
+$('#verDemo').addEventListener('click', startDemo);
+$('#salir').addEventListener('click', async () => { await api('api/auth.php', {accion: 'salir'}); location.href = location.pathname; });
+
+(async () => {
+  let r;
+  try { r = await api('api/auth.php'); } catch (e) { return startDemo(); }  // sin API: demo
+  if (r.status == 200) {
+    showUser(r.d);
+    if (r.d.rol == 'admin' && !EMP) { location.href = 'admin.html'; return; }
+    try { await startReal(); } catch (e) { showLogin('No se pudieron cargar los datos.'); }
+  } else if (r.status == 401 || r.status == 403) {
+    if (r.d.suspendida) { $('#user').hidden = false; $('#adminLink').hidden = true; }
+    showLogin(r.status == 403 ? r.d.error : '');
+  } else startDemo();
 })();
 }

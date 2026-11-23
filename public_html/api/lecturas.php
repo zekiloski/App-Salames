@@ -21,6 +21,8 @@ $in = body_json();
 $items = isset($in['lecturas']) && is_array($in['lecturas']) ? $in['lecturas'] : [$in];
 if (count($items) > 500) json_out(['error' => 'Demasiadas lecturas'], 413);
 
+// Si la empresa está suspendida se siguen guardando las lecturas (para no perder historial),
+// pero el panel queda bloqueado hasta que se reactive la cuenta.
 $ins = db()->prepare('INSERT INTO lecturas (camara_id, ts, temp, hum, temp_prod, peso_g) VALUES (?,?,?,?,?,?)');
 $ok = 0; $ultima = null;
 foreach ($items as $l) {
@@ -35,6 +37,8 @@ foreach ($items as $l) {
     $ok++;
     if ($atras === 0 || $ultima === null) $ultima = ['t' => $t, 'h' => $h];
 }
+
+if ($ok) db()->prepare('UPDATE camaras SET ultima_lectura = NOW() WHERE id = ?')->execute([$cam['id']]);
 
 // Alertas de rango (con tiempo de espera para no repetir)
 if ($ultima) {
@@ -53,13 +57,13 @@ if ($ultima) {
         $r = db()->prepare("SELECT COUNT(*) FROM alertas WHERE camara_id = ? AND nivel = 'alta' AND ts > NOW() - INTERVAL ? MINUTE");
         $r->execute([$cam['id'], $cd]);
         if ((int)$r->fetchColumn() === 0) {
-            db()->prepare("INSERT INTO alertas (camara_id, ts, nivel, mensaje) VALUES (?, NOW(), 'alta', ?)")
-                ->execute([$cam['id'], $cam['nombre'] . ': ' . implode(' y ', $prob) . '.']);
+            db()->prepare("INSERT INTO alertas (empresa_id, camara_id, ts, nivel, mensaje) VALUES (?, ?, NOW(), 'alta', ?)")
+                ->execute([$cam['empresa_id'], $cam['id'], $cam['nombre'] . ': ' . implode(' y ', $prob) . '.']);
             // Acá se puede sumar el aviso por WhatsApp / mail (ver README).
         }
     } elseif ($ultNivel === 'alta') {
-        db()->prepare("INSERT INTO alertas (camara_id, ts, nivel, mensaje) VALUES (?, NOW(), 'ok', ?)")
-            ->execute([$cam['id'], $cam['nombre'] . ': condiciones de vuelta en rango.']);
+        db()->prepare("INSERT INTO alertas (empresa_id, camara_id, ts, nivel, mensaje) VALUES (?, ?, NOW(), 'ok', ?)")
+            ->execute([$cam['empresa_id'], $cam['id'], $cam['nombre'] . ': condiciones de vuelta en rango.']);
     }
 }
 

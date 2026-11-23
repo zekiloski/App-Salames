@@ -14,7 +14,8 @@
 <header>
   <div class="brand">
     <h1>Salame Monitor</h1>
-    <div class="sub">Control de secado y trazabilidad · Chacinados de Oncativo</div>
+    <div class="sub" id="empresa">Control de secado y trazabilidad · Chacinados de Oncativo</div>
+    <div class="user" id="user" hidden><span id="userName"></span><a id="adminLink" href="admin.html" hidden>Administrador</a><button class="btn sm" id="salir">Salir</button></div>
   </div>
   <nav role="tablist">
     <button role="tab" aria-selected="true" data-v="camara">Cámara en vivo</button>
@@ -22,6 +23,17 @@
     <button role="tab" aria-selected="false" data-v="materiales">Equipamiento</button>
   </nav>
 </header>
+
+<section class="band login" id="login" hidden>
+  <form class="panel" id="loginForm">
+    <h2>Ingresar</h2>
+    <label>Mail<input type="email" name="email" autocomplete="username" required></label>
+    <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
+    <p class="err" id="loginErr" role="alert"></p>
+    <button class="btn pri">Entrar</button>
+    <button class="btn" type="button" id="verDemo">Ver demo</button>
+  </form>
+</section>
 
 <main>
 <section class="view on band" id="v-camara">
