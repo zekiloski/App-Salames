@@ -1,0 +1,12 @@
+# Credenciales: nunca subir
+public_html/api/config.php
+.env
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Arduino
+firmware/**/build/

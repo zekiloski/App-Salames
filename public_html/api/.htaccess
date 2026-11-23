@@ -1,0 +1,5 @@
+# Bloquea el acceso directo a archivos internos de la API
+<FilesMatch "^(config|config\.example|db)\.php$">
+  Require all denied
+</FilesMatch>
+Options -Indexes

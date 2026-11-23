@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Salame Monitor Oncativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Archivo+Narrow:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<div class="banner" id="modo">Modo demo · datos simulados</div>
+<header>
+  <div class="brand">
+    <h1>Salame Monitor</h1>
+    <div class="sub">Control de secado y trazabilidad · Chacinados de Oncativo</div>
+  </div>
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-v="camara">Cámara en vivo</button>
+    <button role="tab" aria-selected="false" data-v="lotes">Lotes y trazabilidad</button>
+    <button role="tab" aria-selected="false" data-v="materiales">Equipamiento</button>
+  </nav>
+</header>
+
+<main>
+<section class="view on band" id="v-camara">
+  <div class="row">
+    <h2 id="camTitle">Cámara</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <select id="cam" aria-label="Cámara"></select>
+      <button class="btn warn" id="fail">Simular falla de humedad</button>
+    </div>
+  </div>
+  <div class="live">
+    <div class="panel">
+      <h3>Últimas 48 horas</h3>
+      <div class="fig"><svg id="chart" role="img" aria-label="Temperatura y humedad de la cámara en las últimas 48 horas"></svg></div>
+      <div class="legend"><span><i style="background:var(--red)"></i>Temperatura (°C)</span><span><i style="background:var(--mold)"></i>Humedad relativa (%)</span><span><i style="background:var(--line);height:10px"></i>Rango objetivo</span></div>
+    </div>
+    <div class="panel"><div class="kpis" id="kpis"></div></div>
+  </div>
+  <div class="panel alerts">
+    <h3>Alertas</h3>
+    <div id="alerts"></div>
+  </div>
+</section>
+
+<section class="view band" id="v-lotes">
+  <div class="row"><h2>Lotes en proceso</h2><span class="sub" style="color:var(--mut)">Tocá un lote para ver su curva y la ficha de trazabilidad</span></div>
+  <div class="panel">
+    <table class="stack"><thead><tr><th>Lote</th><th>Producto</th><th>Etapa</th><th>Día</th><th>Pérdida de peso</th><th>Avance vs. meta</th></tr></thead><tbody id="lots"></tbody></table>
+  </div>
+  <div class="detail" id="detail"></div>
+</section>
+
+<section class="view band" id="v-materiales">
+  <div class="row"><h2>Qué hace falta para medir una cámara</h2></div>
+  <div class="mats" id="mats"></div>
+  <div class="panel params">
+    <h3>Rangos de referencia de la demo</h3>
+    <div class="scroll"><table><thead><tr><th>Etapa</th><th class="n">Temperatura</th><th class="n">Humedad relativa</th><th>Duración típica</th></tr></thead><tbody id="params"></tbody></table></div>
+    <p class="note">Valores orientativos. Cada chacinador carga sus propios rangos por cámara en la base de datos.</p>
+  </div>
+</section>
+</main>
+<script src="assets/app.js"></script>
+</body>
+</html>
