@@ -4,9 +4,79 @@
 {
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-let D = null, sel = null;
+let D = null, sel = null, PRUEBA = false;
+
+/* ---------- Modo prueba ----------
+ * Imita a api/admin.php dentro del navegador, sin servidor ni base de datos.
+ * Los datos quedan solo en este navegador (localStorage) y se pueden borrar desde el aviso de arriba.
+ */
+const KEY = 'salame_admin_prueba';
+// Hora local "AAAA-MM-DD HH:MM:SS", igual que la devuelve MySQL
+const hoy = (min = 0) => new Date(Date.now() - min * 60000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19).replace('T', ' ');
+function semilla() {
+  return {n: 3, empresas: [{id: 1, nombre: 'Chacinados de prueba', contacto: '3572 000000', estado: 'activa', creada: hoy()}],
+    camaras: [
+      {id: 1, empresa_id: 1, nombre: 'Cámara 1 · Secado', etapa: 'Secado', t_min: 12, t_max: 15, h_min: 75, h_max: 85, activa: true, ultima_lectura: hoy(3)},
+      {id: 2, empresa_id: 1, nombre: 'Cámara 2 · Estufado', etapa: 'Estufado', t_min: 20, t_max: 24, h_min: 88, h_max: 95, activa: true, ultima_lectura: hoy(95)}],
+    usuarios: [{id: 3, empresa_id: 1, email: 'encargado@prueba.com', nombre: 'Encargado', activo: true, ultimo_login: null}]};
+}
+const leerPrueba = () => { try { return JSON.parse(localStorage.getItem(KEY)) || semilla(); } catch (e) { return semilla(); } };
+const guardarPrueba = db => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} };
+const azar = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
+
+function apiPrueba(body) {
+  const db = leerPrueba(), err = m => { alert(m); throw new Error(m); };
+  const emp = id => db.empresas.find(e => e.id == id) || err('No existe');
+  if (!body) {
+    const camaras = db.camaras.map(c => ({...c, empresa: emp(c.empresa_id).nombre,
+      sin_datos: !c.ultima_lectura || Date.now() - new Date(c.ultima_lectura.replace(' ', 'T')) > 30 * 60000}));
+    const empresas = db.empresas.map(e => ({...e, camaras: db.camaras.filter(c => c.empresa_id == e.id && c.activa).length,
+      usuarios: db.usuarios.filter(u => u.empresa_id == e.id && u.activo).length}));
+    return {sin_datos_min: 30, empresas, camaras, usuarios: db.usuarios};
+  }
+  const b = body, id = +b.id, nid = () => ++db.n, num = k => (b[k] === '' || isNaN(+b[k])) ? err(`${k} tiene que ser un número`) : +b[k];
+  let r = {ok: true};
+  switch (b.accion) {
+    case 'empresa_crear':
+      if (!String(b.nombre || '').trim()) err('Falta nombre');
+      r.id = nid(); db.empresas.push({id: r.id, nombre: b.nombre.trim(), contacto: b.contacto || null, estado: 'activa', creada: hoy()}); break;
+    case 'empresa_estado': emp(id).estado = b.estado; break;
+    case 'usuario_crear':
+      emp(b.empresa_id);
+      if (!/^\S+@\S+\.\S+$/.test(b.email || '')) err('Mail inválido');
+      if (db.usuarios.some(u => u.email == b.email.toLowerCase())) err('Ya existe un usuario con ese mail');
+      r.email = b.email.toLowerCase(); r.password = azar(7);
+      db.usuarios.push({id: nid(), empresa_id: +b.empresa_id, email: r.email, nombre: b.nombre || r.email, activo: true, ultimo_login: null}); break;
+    case 'usuario_clave': r.password = azar(7); break;
+    case 'usuario_activo': db.usuarios.find(u => u.id == id).activo = !!b.activo; break;
+    case 'camara_crear':
+      emp(b.empresa_id);
+      if (!String(b.nombre || '').trim()) err('Falta nombre');
+      r.id = nid(); r.device_token = azar(24);
+      db.camaras.push({id: r.id, empresa_id: +b.empresa_id, nombre: b.nombre.trim(), etapa: b.etapa || 'Secado',
+        t_min: num('t_min'), t_max: num('t_max'), h_min: num('h_min'), h_max: num('h_max'), activa: true, ultima_lectura: null}); break;
+    case 'camara_editar': {
+      const c = db.camaras.find(x => x.id == id);
+      for (const k of ['t_min', 't_max', 'h_min', 'h_max']) if (k in b) c[k] = num(k);
+      if ('activa' in b) c.activa = !!b.activa; break;
+    }
+    case 'camara_token': r.device_token = azar(24); break;
+    default: err('Acción desconocida');
+  }
+  guardarPrueba(db);
+  return r;
+}
+
+function entrarPrueba() {
+  PRUEBA = true;
+  $('#login').hidden = true; $('#admin').hidden = false; $('#user').hidden = false;
+  $('#userName').textContent = 'Modo prueba';
+  $('#prueba').hidden = false;
+  cargar();
+}
 
 async function api(body) {
+  if (PRUEBA) return apiPrueba(body);
   const r = await fetch('api/admin.php', body ? {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)} : {cache: 'no-store'});
   let d = {}; try { d = await r.json(); } catch (e) {}
   if (r.status == 401) { location.reload(); throw new Error('sesión'); }
@@ -138,7 +208,15 @@ $('#detalle').addEventListener('click', async e => {
   await cargar();
 });
 
+$('#verPrueba').addEventListener('click', entrarPrueba);
+$('#borrarPrueba').addEventListener('click', () => {
+  if (!confirm('¿Borrar todas las empresas, cámaras y usuarios de prueba?')) return;
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  sel = null; cargar();
+});
+
 $('#salir').addEventListener('click', async () => {
+  if (PRUEBA) { location.reload(); return; }
   await fetch('api/auth.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{"accion":"salir"}'});
   location.reload();
 });
@@ -155,8 +233,9 @@ $('#loginForm').addEventListener('submit', async e => {
 
 /* ---------- Arranque ---------- */
 (async () => {
-  const r = await fetch('api/auth.php', {cache: 'no-store'});
-  const u = await r.json().catch(() => ({}));
+  let r, u;
+  try { r = await fetch('api/auth.php', {cache: 'no-store'}); u = await r.json(); }
+  catch (e) { return entrarPrueba(); }  // sin servidor PHP (por ejemplo, abriendo el archivo en la PC): modo prueba
   if (!r.ok) { $('#login').hidden = false; return; }
   if (u.rol != 'admin') { location.href = 'index.html'; return; }
   $('#user').hidden = false; $('#userName').textContent = u.nombre;

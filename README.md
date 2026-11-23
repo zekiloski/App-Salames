@@ -7,6 +7,7 @@ Panel web + API PHP/MySQL + firmware ESP32. Pensado para hosting compartido de *
 - Cada salamero (empresa) tiene sus usuarios, cámaras y lotes. Nadie ve los datos de otro.
 - Vos entrás como **administrador** (`admin.html`): das de alta clientes, usuarios y cámaras, ves qué equipos dejaron de mandar datos y suspendés la cuenta de quien no paga.
 - En la pantalla de ingreso está el botón **Ver demo**, con datos simulados, para mostrarle el sistema a un cliente sin instalar nada.
+- **Modo prueba del administrador:** abriendo `public_html/admin.html` directo en el navegador (sin servidor) podés dar de alta empresas, cámaras y usuarios para practicar. Esos datos quedan solo en ese navegador; con el servidor real, la pantalla de ingreso tiene el botón **Probar sin servidor**.
 
 ## Estructura
 

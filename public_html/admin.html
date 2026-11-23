@@ -19,6 +19,7 @@
 <script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=(c.closest('table').rows[0].cells[i]||{}).textContent||''}}).observe(document,{childList:true,subtree:true})</script>
 </head>
 <body>
+<div class="banner" id="prueba" hidden>Modo prueba · los datos quedan solo en este navegador <button class="btn sm" id="borrarPrueba">Borrar datos de prueba</button></div>
 <header>
   <div class="brand">
     <h1>Salame Monitor</h1>
@@ -35,6 +36,7 @@
     <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
     <p class="err" id="loginErr" role="alert"></p>
     <button class="btn pri">Entrar</button>
+    <button class="btn" type="button" id="verPrueba">Probar sin servidor (modo prueba)</button>
   </form>
 </section>
 

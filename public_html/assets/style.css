@@ -161,3 +161,4 @@ input:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
   .view{display:none!important}.view.on{display:block!important}
 }
 a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.banner .btn.sm{min-height:30px;margin-left:8px;padding:2px 10px;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.5);color:#fff}
