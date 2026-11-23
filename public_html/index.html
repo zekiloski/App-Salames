@@ -22,16 +22,22 @@
 <div class="banner" id="modo">Modo demo · datos simulados</div>
 <header>
   <div class="brand">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></button>
     <h1>Salame Monitor</h1>
     <div class="sub" id="empresa">Control de secado y trazabilidad · Chacinados de Oncativo</div>
-    <div class="user" id="user" hidden><span id="userName"></span><a id="adminLink" href="admin.html" hidden>Administrador</a><button class="btn sm" id="salir">Salir</button></div>
   </div>
-  <nav role="tablist">
-    <button role="tab" aria-selected="true" data-v="camara">Cámara en vivo</button>
-    <button role="tab" aria-selected="false" data-v="lotes">Lotes y trazabilidad</button>
-    <button role="tab" aria-selected="false" data-v="materiales">Equipamiento</button>
+  <nav id="menu" aria-label="Secciones" tabindex="-1">
+    <div class="drawer-head"><b>Salame Monitor</b><button class="menu-btn" id="menuClose" aria-label="Cerrar menú"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-v="camara"><svg class="ic" aria-hidden="true"><use href="#i-vivo"/></svg>Cámara en vivo</button>
+      <button role="tab" aria-selected="false" data-v="lotes"><svg class="ic" aria-hidden="true"><use href="#i-lote"/></svg>Lotes y trazabilidad<span class="badge" id="lotBadge" hidden></span></button>
+      <button role="tab" aria-selected="false" data-v="guia"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg>Qué significa cada aviso</button>
+      <button role="tab" aria-selected="false" data-v="materiales"><svg class="ic" aria-hidden="true"><use href="#i-equipo"/></svg>Equipamiento</button>
+    </div>
+    <div class="user" id="user" hidden><span id="userName"></span><a id="adminLink" href="admin.html" hidden><svg class="ic" aria-hidden="true"><use href="#i-escudo"/></svg>Administrador</a><button class="btn sm" id="salir"><svg class="ic" aria-hidden="true"><use href="#i-salir"/></svg>Salir</button></div>
   </nav>
 </header>
+<div class="scrim" id="scrim" hidden></div>
 
 <section class="band login" id="login" hidden>
   <form class="panel" id="loginForm">
@@ -54,6 +60,7 @@
       <button class="btn warn" id="fail">Simular falla de humedad</button>
     </div>
   </div>
+  <div id="resumen"></div>
   <div class="live">
     <div class="panel">
       <h3>Últimas 48 horas</h3>
@@ -63,17 +70,27 @@
     <div class="panel"><div class="kpis" id="kpis"></div></div>
   </div>
   <div class="panel alerts">
-    <h3>Alertas</h3>
+    <h3><svg class="ic" aria-hidden="true"><use href="#i-campana"/></svg>Alertas de la cámara</h3>
     <div id="alerts"></div>
   </div>
 </section>
 
 <section class="view band" id="v-lotes">
-  <div class="row"><h2>Lotes en proceso</h2><span class="sub" style="color:var(--mut)">Tocá un lote para ver su curva y la ficha de trazabilidad</span></div>
+  <div class="row"><h2>Lotes en proceso</h2><span class="sub" style="color:var(--mut)">Tocá un lote para ver qué le pasa, su curva y la ficha de trazabilidad</span></div>
+  <div class="leyenda" id="leyenda"></div>
   <div class="panel">
-    <table class="stack"><thead><tr><th>Lote</th><th>Producto</th><th>Etapa</th><th>Día</th><th>Pérdida de peso</th><th>Avance vs. meta</th></tr></thead><tbody id="lots"></tbody></table>
+    <table class="stack"><thead><tr><th>Estado</th><th>Lote</th><th>Producto</th><th>Etapa</th><th>Día</th><th>Pérdida de peso</th><th>Avance vs. meta</th></tr></thead><tbody id="lots"></tbody></table>
   </div>
   <div class="detail" id="detail"></div>
+</section>
+
+<section class="view band" id="v-guia">
+  <div class="row"><h2>¿Cómo sé si el estacionamiento va bien?</h2></div>
+  <div class="panel guia-intro">
+    <p>La app pesa sola una <b>vara testigo</b> en cada cámara y compara cuánto peso perdió el lote con lo que debería haber perdido a esta altura. Si se aparta, te avisa con un ícono y te dice qué revisar.</p>
+    <p class="note">La curva esperada es una referencia general (llega a la meta en unos 28 días). Durante la prueba piloto se ajusta a cada producto y calibre.</p>
+  </div>
+  <div class="guia" id="guia"></div>
 </section>
 
 <section class="view band" id="v-materiales">
@@ -86,6 +103,7 @@
   </div>
 </section>
 </main>
+<script src="assets/ui.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

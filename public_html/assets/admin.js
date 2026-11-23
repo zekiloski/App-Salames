@@ -98,16 +98,17 @@ async function cargar() { D = await api(); render(); }
 
 function render() {
   const emp = id => D.empresas.find(e => e.id == id);
-  const caidas = D.camaras.filter(c => c.activa && c.sin_datos && emp(c.empresa_id)?.estado == 'activa');
+  const caidas = D.camaras.filter(c => c.activa && c.sin_datos && (emp(c.empresa_id) || {}).estado == 'activa');
+  $('#caidosBadge').hidden = !caidas.length; $('#caidosBadge').textContent = caidas.length;
   $('#caidos').innerHTML = caidas.length
-    ? caidas.map(c => `<div class="alert"><span class="dot" style="background:var(--ember)"></span><time>${hace(c.ultima_lectura)}</time><span><b>${esc(c.empresa)}</b> · ${esc(c.nombre)}</span></div>`).join('')
+    ? caidas.map(c => `<div class="alert">${ic('sinSenal', 'c-ember')}<time>${hace(c.ultima_lectura)}</time><span><b>${esc(c.empresa)}</b> · ${esc(c.nombre)}</span></div>`).join('')
     : `<p class="note">Todos los equipos mandaron datos en los últimos ${D.sin_datos_min} minutos.</p>`;
 
   $('#empresas').innerHTML = D.empresas.length ? D.empresas.map(e => `<tr class="click" data-id="${e.id}" tabindex="0">
     <td><b>${esc(e.nombre)}</b></td><td>${esc(e.contacto || '–')}</td>
-    <td><span class="tag ${e.estado == 'activa' ? '' : 'f'}">${e.estado}</span></td>
+    <td><span class="estado ${e.estado == 'activa' ? 'n-ok' : 'n-pr'}">${ic(e.estado == 'activa' ? 'ok' : 'pausa')}${e.estado}</span></td>
     <td class="n">${e.camaras}</td><td class="n">${e.usuarios}</td>
-    <td class="n acc"><a class="btn sm" href="index.html?empresa_id=${e.id}">Ver panel</a></td></tr>`).join('')
+    <td class="n acc"><a class="btn sm" href="index.html?empresa_id=${e.id}">${ic('vivo')}Ver panel</a></td></tr>`).join('')
     : '<tr><td colspan="6">Todavía no hay clientes.</td></tr>';
 
   renderDetalle();
@@ -120,15 +121,15 @@ function renderDetalle() {
   $('#detalle').innerHTML = `
   <div class="panel" style="margin-top:16px">
     <div class="row"><h2>${esc(e.nombre)}</h2>
-      <button class="btn ${e.estado == 'activa' ? 'warn' : 'pri'}" data-a="estado">${e.estado == 'activa' ? 'Suspender cuenta' : 'Reactivar cuenta'}</button></div>
+      <button class="btn ${e.estado == 'activa' ? 'warn' : 'pri'}" data-a="estado">${ic(e.estado == 'activa' ? 'pausa' : 'ok')}${e.estado == 'activa' ? 'Suspender cuenta' : 'Reactivar cuenta'}</button></div>
     ${e.estado == 'suspendida' ? '<p class="note">Cuenta suspendida: los usuarios no pueden entrar al panel. Los equipos siguen guardando lecturas.</p>' : ''}
 
-    <h3 style="margin-top:16px">Cámaras</h3>
+    <h3 style="margin-top:16px">${ic('termometro')}Cámaras</h3>
     <div class="scroll"><table class="stack"><thead><tr><th>Cámara</th><th>Etapa</th><th class="n">Temp.</th><th class="n">Humedad</th><th>Último dato</th><th></th></tr></thead><tbody>
     ${cams.map(c => `<tr><td><b>${esc(c.nombre)}</b>${c.activa ? '' : ' <span class="tag f">inactiva</span>'}</td><td>${esc(c.etapa)}</td>
       <td class="n">${c.t_min}–${c.t_max} °C</td><td class="n">${c.h_min}–${c.h_max} %</td>
       <td class="${c.sin_datos && c.activa ? 'bad' : ''}">${hace(c.ultima_lectura)}</td>
-      <td class="n acc"><button class="btn sm" data-a="rangos" data-id="${c.id}">Rangos</button> <button class="btn sm" data-a="token" data-id="${c.id}">Nuevo token</button> <button class="btn sm" data-a="activa" data-id="${c.id}">${c.activa ? 'Desactivar' : 'Activar'}</button></td></tr>`).join('') || '<tr><td colspan="6">Sin cámaras.</td></tr>'}
+      <td class="n acc"><button class="btn sm" data-a="rangos" data-id="${c.id}">${ic('termometro')}Rangos</button> <button class="btn sm" data-a="token" data-id="${c.id}">${ic('llave')}Nuevo token</button> <button class="btn sm" data-a="activa" data-id="${c.id}">${ic(c.activa ? 'pausa' : 'ok')}${c.activa ? 'Desactivar' : 'Activar'}</button></td></tr>`).join('') || '<tr><td colspan="6">Sin cámaras.</td></tr>'}
     </tbody></table></div>
     <form class="form inline" id="fCamara">
       <label>Nueva cámara<input name="nombre" required placeholder="Cámara 1 · Secado"></label>
@@ -140,10 +141,10 @@ function renderDetalle() {
       <button class="btn pri">Agregar cámara</button>
     </form>
 
-    <h3 style="margin-top:20px">Usuarios</h3>
+    <h3 style="margin-top:20px">${ic('usuarios')}Usuarios</h3>
     <div class="scroll"><table class="stack"><thead><tr><th>Nombre</th><th>Mail</th><th>Último ingreso</th><th></th></tr></thead><tbody>
     ${users.map(u => `<tr><td><b>${esc(u.nombre)}</b>${u.activo ? '' : ' <span class="tag f">de baja</span>'}</td><td>${esc(u.email)}</td><td>${hace(u.ultimo_login)}</td>
-      <td class="n acc"><button class="btn sm" data-a="clave" data-id="${u.id}">Nueva contraseña</button> <button class="btn sm" data-a="uactivo" data-id="${u.id}">${u.activo ? 'Dar de baja' : 'Reactivar'}</button></td></tr>`).join('') || '<tr><td colspan="4">Sin usuarios.</td></tr>'}
+      <td class="n acc"><button class="btn sm" data-a="clave" data-id="${u.id}">${ic('llave')}Nueva contraseña</button> <button class="btn sm" data-a="uactivo" data-id="${u.id}">${ic(u.activo ? 'pausa' : 'ok')}${u.activo ? 'Dar de baja' : 'Reactivar'}</button></td></tr>`).join('') || '<tr><td colspan="4">Sin usuarios.</td></tr>'}
     </tbody></table></div>
     <form class="form inline" id="fUsuario">
       <label>Nombre<input name="nombre" placeholder="Encargado"></label>
@@ -236,7 +237,7 @@ $('#loginForm').addEventListener('submit', async e => {
   let r, u;
   try { r = await fetch('api/auth.php', {cache: 'no-store'}); u = await r.json(); }
   catch (e) { return entrarPrueba(); }  // sin servidor PHP (por ejemplo, abriendo el archivo en la PC): modo prueba
-  if (!r.ok) { $('#login').hidden = false; return; }
+  if (!r.ok) { document.body.classList.add('login-on'); $('#login').hidden = false; return; }
   if (u.rol != 'admin') { location.href = 'index.html'; return; }
   $('#user').hidden = false; $('#userName').textContent = u.nombre;
   $('#admin').hidden = false;
