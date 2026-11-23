@@ -97,7 +97,7 @@ function drawChart() {
   const s = svg, W = s.clientWidth, H = s.clientHeight, data = serie();
   if (!W || !H) return;
   if (data.length < 2) { s.innerHTML = `<text x="${W / 2}" y="${H / 2}" text-anchor="middle" fill="var(--mut)" font-size="15">Todavía no hay lecturas para esta cámara</text>`; return; }
-  const c = C(), small = W < 520, pl = small ? 30 : 40, pr = small ? 30 : 44, pt = 14, pb = 26, iw = W - pl - pr, ih = H - pt - pb;
+  const c = C(), small = W < 520, pl = small ? 30 : 40, pr = small ? 40 : 44, pt = 14, pb = 26, iw = W - pl - pr, ih = H - pt - pb;
   const tMin = c.t_min - 6, tMax = c.t_max + 6, hMin = Math.max(40, c.h_min - 20), hMax = 100;
   const X = i => pl + i / (data.length - 1) * iw, YT = v => pt + (1 - (v - tMin) / (tMax - tMin)) * ih, YH = v => pt + (1 - (v - hMin) / (hMax - hMin)) * ih;
   const path = (k, Y) => data.map((p, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p[k]).toFixed(1)).join('');
@@ -266,7 +266,8 @@ $('#salir').addEventListener('click', async () => { await api('api/auth.php', {a
 (async () => {
   let r;
   try { r = await api('api/auth.php'); } catch (e) { return startDemo(); }  // sin API: demo
-  if (r.status == 200) {
+  if (r.status == 200 && !r.d.rol) startDemo();  // el servidor no ejecuta PHP: demo
+  else if (r.status == 200) {
     showUser(r.d);
     if (r.d.rol == 'admin' && !EMP) { location.href = 'admin.html'; return; }
     try { await startReal(); } catch (e) { showLogin('No se pudieron cargar los datos.'); }

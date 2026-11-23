@@ -2,11 +2,21 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7a1424">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Salame Monitor">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
 <title>Salame Monitor · Administrador</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Archivo+Narrow:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=(c.closest('table').rows[0].cells[i]||{}).textContent||''}}).observe(document,{childList:true,subtree:true})</script>
 </head>
 <body>
 <header>
@@ -38,7 +48,7 @@
 
   <div class="panel" style="margin-top:16px">
     <div class="row"><h3 style="margin:0">Clientes</h3></div>
-    <div class="scroll"><table><thead><tr><th>Empresa</th><th>Contacto</th><th>Estado</th><th class="n">Cámaras</th><th class="n">Usuarios</th><th></th></tr></thead><tbody id="empresas"></tbody></table></div>
+    <div class="scroll"><table class="stack"><thead><tr><th>Empresa</th><th>Contacto</th><th>Estado</th><th class="n">Cámaras</th><th class="n">Usuarios</th><th></th></tr></thead><tbody id="empresas"></tbody></table></div>
     <form class="form inline" id="fEmpresa">
       <label>Nueva empresa<input name="nombre" required placeholder="Nombre del salamero"></label>
       <label>Contacto<input name="contacto" placeholder="Teléfono o mail"></label>

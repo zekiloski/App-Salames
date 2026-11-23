@@ -3,13 +3,23 @@
    PICTURE: el panel de la cámara en vivo con curvas de temperatura y humedad sobre sus bandas objetivo.
    COLOUR and TYPE: rojo salame dominante, verde moho de apoyo, blanco flor como fondo, acento naranja brasa; Archivo + Archivo Narrow.
    LAYOUT: barra superior roja, pestañas, panel en vivo grande con indicadores a la derecha, luego lotes y materiales. */
-:root{color-scheme:light dark;
---bg:light-dark(#fbf9f8,#160c0e);--card:light-dark(#ffffff,#22141a);--ink:light-dark(#1d1214,#f4ecea);--mut:light-dark(#6d5d60,#b9a6a9);
---red:light-dark(#8e1b2b,#c23a4e);--redbar:#7a1424;--mold:light-dark(#4f6b55,#8fb59a);--ember:light-dark(#d4511f,#ff7a45);--line:light-dark(#eadfdf,#3a2629);--ok:light-dark(#2f7a46,#6fcf8f)}
-:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+/* Colores con variables comunes + media query (no light-dark()) para que funcione también en celulares viejos. */
+:root{color-scheme:light;
+--bg:#fbf9f8;--card:#ffffff;--ink:#1d1214;--mut:#6d5d60;--red:#8e1b2b;--redbar:#7a1424;--mold:#4f6b55;--ember:#c4461a;--line:#eadfdf;--ok:#2f7a46;
+--tint-red:rgba(142,27,43,.07);--tint-mold:rgba(79,107,85,.16);--tint-ember:rgba(196,70,26,.14);--tint-ok:rgba(47,122,70,.12);
+--gutter:max(5vw,16px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;
+--bg:#160c0e;--card:#22141a;--ink:#f4ecea;--mut:#b9a6a9;--red:#c23a4e;--mold:#8fb59a;--ember:#ff7a45;--line:#3a2629;--ok:#6fcf8f;
+--tint-red:rgba(194,58,78,.14);--tint-mold:rgba(143,181,154,.18);--tint-ember:rgba(255,122,69,.16);--tint-ok:rgba(111,207,143,.14)}}
+:root[data-theme=dark]{color-scheme:dark;
+--bg:#160c0e;--card:#22141a;--ink:#f4ecea;--mut:#b9a6a9;--red:#c23a4e;--mold:#8fb59a;--ember:#ff7a45;--line:#3a2629;--ok:#6fcf8f;
+--tint-red:rgba(194,58,78,.14);--tint-mold:rgba(143,181,154,.18);--tint-ember:rgba(255,122,69,.16);--tint-ok:rgba(111,207,143,.14)}
 *{box-sizing:border-box;min-width:0}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Archivo,system-ui,sans-serif;overflow-x:clip}
-header{background:var(--redbar);color:#fff;padding:18px max(5vw,16px) 0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Archivo,system-ui,sans-serif;overflow-x:hidden;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+/* Celulares con muesca / isla: el contenido no queda debajo de la cámara ni de la barra de inicio */
+@supports(padding:max(0px)){:root{--gutter:max(5vw,16px,env(safe-area-inset-left),env(safe-area-inset-right))}body{padding-bottom:env(safe-area-inset-bottom)}}
+header{background:var(--redbar);color:#fff;padding:18px 16px 0;padding:max(18px,env(safe-area-inset-top,0px)) var(--gutter) 0}
 .brand{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;justify-content:space-between}
 h1{font:800 clamp(26px,4vw,40px)/1.05 Archivo,sans-serif;margin:0;text-wrap:balance}
 .sub{opacity:.85;font-size:14px}
@@ -17,7 +27,7 @@ nav{display:flex;gap:4px;margin-top:14px;overflow-x:auto}
 nav button{flex:none;font:600 16px Archivo,sans-serif;background:transparent;color:#fff;border:0;padding:12px 16px;min-height:44px;border-radius:10px 10px 0 0;cursor:pointer;opacity:.8}
 nav button[aria-selected=true]{background:var(--bg);color:var(--ink);opacity:1}
 nav button:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
-.band{padding:clamp(20px,3vw,40px) max(5vw,16px);max-width:1240px;margin:0 auto}
+.band{padding:clamp(20px,3vw,40px) var(--gutter);max-width:1240px;margin:0 auto}
 .view{display:none}.view.on{display:block}
 .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
 h2{font:700 clamp(22px,2.6vw,30px)/1.1 "Archivo Narrow",sans-serif;margin:0}
@@ -27,10 +37,10 @@ select,.btn{font:600 16px Archivo,sans-serif;min-height:44px;padding:8px 14px;bo
 .btn.warn{border-color:var(--ember);color:var(--ember)}
 .live{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr);gap:16px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
-.fig{position:relative;min-height:340px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.fig{position:relative;min-height:clamp(240px,48vh,360px)}.fig>svg{position:absolute;top:0;left:0;width:100%;height:100%}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--mut);margin-top:8px}
 .legend i{display:inline-block;width:14px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
-.kpis{display:grid;gap:10px}
+.kpis{display:grid;gap:10px;align-content:start}
 .kpi{border-bottom:1px solid var(--line);padding-bottom:10px}
 .kpi:last-child{border:0}
 .kpi b{display:block;font:800 clamp(28px,3.4vw,38px)/1 Archivo,sans-serif;white-space:nowrap}
@@ -44,17 +54,20 @@ select,.btn{font:600 16px Archivo,sans-serif;min-height:44px;padding:8px 14px;bo
 table{width:100%;border-collapse:collapse;font-size:15px}
 th{text-align:left;font-size:13px;color:var(--mut);font-weight:600;padding:8px;border-bottom:2px solid var(--line)}
 td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th.n{text-align:right}
 td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-tr.click{cursor:pointer}tr.click:hover td{background:color-mix(in srgb,var(--red) 6%,transparent)}
+tr.click{cursor:pointer}
+@media(hover:hover){tr.click:hover td{background:var(--tint-red)}}
+tr.click:active td{background:var(--tint-red)}
 .meter{height:10px;background:var(--line);border-radius:6px;overflow:hidden;min-width:90px;position:relative}
 .meter>i{display:block;height:100%;background:var(--mold)}
 .meter>em{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
-.tag{display:inline-block;font-size:13px;font-weight:600;padding:2px 8px;border-radius:20px;background:color-mix(in srgb,var(--mold) 18%,transparent);color:var(--mold);white-space:nowrap}
-.tag.f{background:color-mix(in srgb,var(--ember) 16%,transparent);color:var(--ember)}
-.tag.l{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red)}
+.tag{display:inline-block;font-size:13px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--tint-mold);color:var(--mold);white-space:nowrap}
+.tag.f{background:var(--tint-ember);color:var(--ember)}
+.tag.l{background:var(--tint-red);color:var(--red)}
 .detail{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;margin-top:16px}
 .ficha{border:2px dashed var(--red);border-radius:14px;padding:16px;font-size:15px}
-.ficha dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:10px 0}
+.ficha dl{clear:both;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:10px 0}
 .ficha dt{color:var(--mut)}.ficha dd{margin:0;font-weight:600}
 .qr{width:96px;height:96px;float:right;margin:0 0 8px 12px}
 .note{font-size:13px;color:var(--mut);margin-top:10px}
@@ -64,11 +77,9 @@ tr.click{cursor:pointer}tr.click:hover td{background:color-mix(in srgb,var(--red
 .mat p{margin:6px 0 0;font-size:15px}
 .params{margin-top:24px}
 .scroll{overflow-x:auto}
-@media(max-width:860px){.live,.detail{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{border:0}}
-@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.fig{min-height:260px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .pulse{animation:p 2s infinite}@keyframes p{50%{opacity:.35}}
-.banner{background:var(--ember);color:#fff;font-size:14px;font-weight:600;padding:6px max(5vw,16px);text-align:center}
+.banner{background:var(--ember);color:#fff;font-size:14px;font-weight:600;padding:6px var(--gutter);text-align:center}
 .banner.real{background:var(--ok)}
 .user{display:flex;align-items:center;gap:12px;font-size:14px;flex-wrap:wrap}
 .user a{color:#fff;font-weight:600}
@@ -82,6 +93,71 @@ input:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 .err{color:var(--ember);font-weight:600;margin:0;min-height:1.5em}
 .form.inline{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .form.inline label{flex:1 1 140px}
-.secreto{background:color-mix(in srgb,var(--ok) 14%,var(--card));border:2px solid var(--ok);border-radius:14px;padding:14px 16px;margin-bottom:16px;font-weight:600;overflow-wrap:anywhere}
+.secreto{background:var(--card);background-image:linear-gradient(var(--tint-ok),var(--tint-ok));border:2px solid var(--ok);border-radius:14px;padding:14px 16px;margin-bottom:16px;font-weight:600;overflow-wrap:anywhere}
 .secreto code{font-size:15px;background:var(--card);padding:2px 6px;border-radius:6px;user-select:all}
 [hidden]{display:none!important}
+.btn,nav button,select,input{touch-action:manipulation}
+.scroll{-webkit-overflow-scrolling:touch}
+
+/* ---------- Adaptación a cada dispositivo ---------- */
+/* Pantallas táctiles: botones de al menos 44 px para tocar con el dedo */
+@media(pointer:coarse){.btn.sm{min-height:44px;padding:8px 14px}}
+
+/* Tablets y celulares acostados */
+@media(max-width:860px){
+  .live,.detail{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .kpi{border:0}
+}
+
+/* Celulares: las tablas pasan a tarjetas, una fila debajo de la otra */
+@media(max-width:600px){
+  header{padding-top:max(12px,env(safe-area-inset-top,0px))}
+  .brand{align-items:center}
+  .brand .sub{flex-basis:100%;order:3}
+  nav{margin-top:10px;margin-inline:calc(-1 * var(--gutter));padding-inline:var(--gutter);scrollbar-width:none;scroll-snap-type:x proximity}
+  nav::-webkit-scrollbar{display:none}
+  nav button{padding:10px 14px;font-size:15px;scroll-snap-align:start}
+  .row>div,.row>select{width:100%}
+  #cam{flex:1 1 100%}
+  .panel{padding:14px;border-radius:14px}
+  table{font-size:14px}
+  .stack thead{display:none}
+  .stack tr{display:block;padding-block:10px;border-bottom:1px solid var(--line)}
+  .stack td{display:block;overflow:hidden;border:0;padding:3px 0 3px 8em;text-align:left;white-space:normal}
+  .stack td::before{content:attr(data-l);float:left;width:7.5em;margin-left:-8em;white-space:normal;color:var(--mut)}
+  .stack td:empty{display:none}
+  .stack td.acc{padding-left:0;display:flex;flex-wrap:wrap;gap:8px;padding-top:8px}
+  .stack td.acc::before{display:none}
+  .stack td.acc .btn{flex:1 1 auto}
+  .form.inline>.btn{width:100%}
+  .alert{flex-wrap:wrap;gap:4px 10px}
+  .alert>span:last-child{flex-basis:calc(100% - 20px);margin-left:20px}
+  .qr{width:80px;height:80px}
+  .secreto .btn{display:block;width:100%;margin-top:10px}
+}
+
+/* Celulares muy chicos (320 px) */
+@media(max-width:360px){
+  .stack td{padding-left:0}
+  .stack td::before{float:none;display:block;width:auto;margin:0;font-size:12px}
+  .kpi b{font-size:26px}
+  .ficha dl{grid-template-columns:minmax(0,1fr)}
+  .ficha dd{margin-bottom:6px}
+}
+
+/* Celular acostado: gráfico más bajo para que entre en la pantalla */
+@media(max-height:500px) and (orientation:landscape){.fig{min-height:220px}}
+
+/* Pantallas grandes (TV en la planta, monitores anchos) */
+@media(min-width:1600px){.band{max-width:1480px}body{font-size:17px}}
+
+/* Impresión: la ficha de trazabilidad sale limpia en papel */
+@media print{
+  header nav,.banner,.user,#fail,#cam,.btn,#login{display:none!important}
+  header{background:none;color:#000;padding:0}
+  body{background:#fff;color:#000}
+  .panel,.ficha{break-inside:avoid;border-color:#999}
+  .view{display:none!important}.view.on{display:block!important}
+}
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}

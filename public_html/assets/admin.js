@@ -37,7 +37,7 @@ function render() {
     <td><b>${esc(e.nombre)}</b></td><td>${esc(e.contacto || '–')}</td>
     <td><span class="tag ${e.estado == 'activa' ? '' : 'f'}">${e.estado}</span></td>
     <td class="n">${e.camaras}</td><td class="n">${e.usuarios}</td>
-    <td class="n"><a href="index.html?empresa_id=${e.id}">Ver panel</a></td></tr>`).join('')
+    <td class="n acc"><a class="btn sm" href="index.html?empresa_id=${e.id}">Ver panel</a></td></tr>`).join('')
     : '<tr><td colspan="6">Todavía no hay clientes.</td></tr>';
 
   renderDetalle();
@@ -54,11 +54,11 @@ function renderDetalle() {
     ${e.estado == 'suspendida' ? '<p class="note">Cuenta suspendida: los usuarios no pueden entrar al panel. Los equipos siguen guardando lecturas.</p>' : ''}
 
     <h3 style="margin-top:16px">Cámaras</h3>
-    <div class="scroll"><table><thead><tr><th>Cámara</th><th>Etapa</th><th class="n">Temp.</th><th class="n">Humedad</th><th>Último dato</th><th></th></tr></thead><tbody>
+    <div class="scroll"><table class="stack"><thead><tr><th>Cámara</th><th>Etapa</th><th class="n">Temp.</th><th class="n">Humedad</th><th>Último dato</th><th></th></tr></thead><tbody>
     ${cams.map(c => `<tr><td><b>${esc(c.nombre)}</b>${c.activa ? '' : ' <span class="tag f">inactiva</span>'}</td><td>${esc(c.etapa)}</td>
       <td class="n">${c.t_min}–${c.t_max} °C</td><td class="n">${c.h_min}–${c.h_max} %</td>
       <td class="${c.sin_datos && c.activa ? 'bad' : ''}">${hace(c.ultima_lectura)}</td>
-      <td class="n"><button class="btn sm" data-a="rangos" data-id="${c.id}">Rangos</button> <button class="btn sm" data-a="token" data-id="${c.id}">Nuevo token</button> <button class="btn sm" data-a="activa" data-id="${c.id}">${c.activa ? 'Desactivar' : 'Activar'}</button></td></tr>`).join('') || '<tr><td colspan="6">Sin cámaras.</td></tr>'}
+      <td class="n acc"><button class="btn sm" data-a="rangos" data-id="${c.id}">Rangos</button> <button class="btn sm" data-a="token" data-id="${c.id}">Nuevo token</button> <button class="btn sm" data-a="activa" data-id="${c.id}">${c.activa ? 'Desactivar' : 'Activar'}</button></td></tr>`).join('') || '<tr><td colspan="6">Sin cámaras.</td></tr>'}
     </tbody></table></div>
     <form class="form inline" id="fCamara">
       <label>Nueva cámara<input name="nombre" required placeholder="Cámara 1 · Secado"></label>
@@ -71,9 +71,9 @@ function renderDetalle() {
     </form>
 
     <h3 style="margin-top:20px">Usuarios</h3>
-    <div class="scroll"><table><thead><tr><th>Nombre</th><th>Mail</th><th>Último ingreso</th><th></th></tr></thead><tbody>
+    <div class="scroll"><table class="stack"><thead><tr><th>Nombre</th><th>Mail</th><th>Último ingreso</th><th></th></tr></thead><tbody>
     ${users.map(u => `<tr><td><b>${esc(u.nombre)}</b>${u.activo ? '' : ' <span class="tag f">de baja</span>'}</td><td>${esc(u.email)}</td><td>${hace(u.ultimo_login)}</td>
-      <td class="n"><button class="btn sm" data-a="clave" data-id="${u.id}">Nueva contraseña</button> <button class="btn sm" data-a="uactivo" data-id="${u.id}">${u.activo ? 'Dar de baja' : 'Reactivar'}</button></td></tr>`).join('') || '<tr><td colspan="4">Sin usuarios.</td></tr>'}
+      <td class="n acc"><button class="btn sm" data-a="clave" data-id="${u.id}">Nueva contraseña</button> <button class="btn sm" data-a="uactivo" data-id="${u.id}">${u.activo ? 'Dar de baja' : 'Reactivar'}</button></td></tr>`).join('') || '<tr><td colspan="4">Sin usuarios.</td></tr>'}
     </tbody></table></div>
     <form class="form inline" id="fUsuario">
       <label>Nombre<input name="nombre" placeholder="Encargado"></label>
