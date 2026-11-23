@@ -82,8 +82,10 @@ const estado = (nivel, corto) => { const n = NIVEL[nivel]; return `<span class="
 let modo = 'demo', S = null, cam = 0, fail = false;
 
 /* ---------- Datos demo ---------- */
-function demoState() {
-  const camaras = [
+// propias: cámaras de una empresa del modo prueba (si no, las 3 de ejemplo). Las lecturas y lotes son simulados.
+function demoState(propias) {
+  const camaras = propias ? propias.map(c => ({id: c.id, nombre: c.nombre, t_min: c.t_min, t_max: c.t_max, h_min: c.h_min, h_max: c.h_max,
+      tb: (c.t_min + c.t_max) / 2, hb: (c.h_min + c.h_max) / 2})) : [
     {id: 1, nombre: 'Cámara 1 · Secado', t_min: 12, t_max: 15, h_min: 75, h_max: 85, tb: 13.5, hb: 80},
     {id: 2, nombre: 'Cámara 2 · Estufado', t_min: 20, t_max: 24, h_min: 88, h_max: 95, tb: 22, hb: 92},
     {id: 3, nombre: 'Cámara 3 · Estacionamiento', t_min: 10, t_max: 14, h_min: 70, h_max: 80, tb: 12, hb: 75}];
@@ -105,19 +107,22 @@ function demoState() {
     }
     return {codigo, producto, etapa, camara_id, dia, perdida, meta, kg, horas_fuera: horas, origen: 'Granja zona Oncativo (cargado por el elaborador)', curva};
   };
+  let lotes = [
+    L('L-2611-01', 'Salame tipo Oncativo · calibre 50', 'Secado', 1, 14, 25.8, 33, 420, 0.4),
+    L('L-2611-02', 'Salame tipo Oncativo · calibre 70', 'Secado', 1, 9, 13.1, 35, 380, 0),
+    L('L-2611-04', 'Salame picado grueso · calibre 40', 'Secado', 1, 5, 20.4, 33, 300, 7.5),
+    L('L-2611-03', 'Salamín picado fino', 'Estufado', 2, 2, 4.2, 30, 260, 0),
+    L('L-2610-07', 'Salame tipo Oncativo · calibre 50', 'Estacionamiento', 3, 24, 29.1, 33, 510, 0, 4),
+    L('L-2610-05', 'Bondiola curada', 'Estacionamiento', 3, 31, 33.4, 33, 190, 0)];
+  // Con cámaras propias, los lotes de ejemplo se reparten entre ellas (sin cámaras no hay lotes)
+  if (propias) lotes = camaras.length ? lotes.map((l, i) => ({...l, camara_id: camaras[i % camaras.length].id})) : [];
+  const c1 = camaras.length ? camaras[0].nombre : 'Cámara 1';
   return {
-    camaras, lecturas,
-    lotes: [
-      L('L-2611-01', 'Salame tipo Oncativo · calibre 50', 'Secado', 1, 14, 25.8, 33, 420, 0.4),
-      L('L-2611-02', 'Salame tipo Oncativo · calibre 70', 'Secado', 1, 9, 13.1, 35, 380, 0),
-      L('L-2611-04', 'Salame picado grueso · calibre 40', 'Secado', 1, 5, 20.4, 33, 300, 7.5),
-      L('L-2611-03', 'Salamín picado fino', 'Estufado', 2, 2, 4.2, 30, 260, 0),
-      L('L-2610-07', 'Salame tipo Oncativo · calibre 50', 'Estacionamiento', 3, 24, 29.1, 33, 510, 0, 4),
-      L('L-2610-05', 'Bondiola curada', 'Estacionamiento', 3, 31, 33.4, 33, 190, 0)],
-    alertas: [
-      {nivel: 'ok', hora: '08:12', mensaje: 'Cámara 1: humedad volvió al rango (79 %).'},
-      {nivel: 'alta', hora: '06:40', mensaje: 'Cámara 1: humedad en 88 % durante 25 min. Se avisó al responsable.'},
-      {nivel: 'info', hora: 'Ayer 18:05', mensaje: 'Lote L-2610-05 llegó al 32,9 % de pérdida: listo para revisar.'}]
+    camaras, lecturas, lotes,
+    alertas: camaras.length ? [
+      {nivel: 'ok', hora: '08:12', mensaje: c1 + ': humedad volvió al rango.'},
+      {nivel: 'alta', hora: '06:40', mensaje: c1 + ': humedad fuera de rango durante 25 min. Se avisó al responsable.'},
+      {nivel: 'info', hora: 'Ayer 18:05', mensaje: 'Lote L-2610-05 llegó a la meta de pérdida: listo para revisar.'}] : []
   };
 }
 
@@ -291,6 +296,7 @@ function renderAll() {
 
 /* ---------- Simulación (solo demo) ---------- */
 function tickDemo() {
+  if (!S.camaras.length) return;
   const c = C(), a = serie(), last = a[a.length - 1];
   const t = last.t + (c.tb - last.t) * .15 + (Math.random() - .5) * .3;
   const h = fail ? Math.min(97, last.h + 1.6) : last.h + (c.hb - last.h) * .2 + (Math.random() - .5);
@@ -332,11 +338,48 @@ $('#mats').innerHTML = MATS.map(m => `<div class="mat">${ic(m[0], 'grande c-red'
 $('#params').innerHTML = PARAMS.map(p => `<tr><td>${p[0]}</td><td class="n">${p[1]}</td><td class="n">${p[2]}</td><td>${p[3]}</td></tr>`).join('');
 
 /* ---------- Arranque ---------- */
-function startDemo() {
+// propias / empresa: cámaras y nombre de una empresa del modo prueba (si no, la demo general)
+function startDemo(propias, empresa) {
   document.body.classList.remove('login-on'); $('#login').hidden = true; $('#modo').hidden = false;
-  S = demoState(); modo = 'demo';
+  S = demoState(propias); modo = 'demo';
+  if (empresa) { $('#empresa').textContent = empresa; $('#modo').textContent = 'Modo prueba · ' + empresa + ' · lecturas simuladas'; }
   setInterval(tickDemo, 2500);
   fillCams(); renderAll();
+}
+
+/* ---------- Modo prueba (sin servidor) ----------
+ * Permite entrar con los usuarios creados en el modo prueba del administrador (PruebaDB, en ui.js).
+ * Cada usuario ve solo las cámaras de su empresa, igual que en el servidor real.
+ */
+let PRUEBA = false;
+const SES = 'salame_prueba_uid';
+const sesion = {get: () => { try { return sessionStorage.getItem(SES); } catch (e) { return null; } },
+  set: v => { try { v ? sessionStorage.setItem(SES, v) : sessionStorage.removeItem(SES); } catch (e) {} }};
+
+function entrarEmpresaPrueba(db, empId, u) {
+  const e = db.empresas.find(x => x.id == empId);
+  if (!e) return showLogin('La empresa no existe.');
+  if (u && e.estado != 'activa') { sesion.set(null); return showLogin('Cuenta suspendida. Comunicate con el proveedor del servicio.'); }
+  showUser(u || {nombre: 'Administrador · vista del cliente', rol: 'admin'});
+  startDemo(db.camaras.filter(c => c.empresa_id == empId && c.activa), e.nombre);
+}
+
+function loginPrueba(email, pass) {
+  const db = PruebaDB.leer(), u = db.usuarios.find(x => x.email == email.trim().toLowerCase());
+  if (!u || !u.activo || u.pass !== pass) return showLogin('Mail o contraseña incorrectos.');
+  u.ultimo_login = PruebaDB.hoy(); PruebaDB.guardar(db);
+  sesion.set(u.id);
+  entrarEmpresaPrueba(db, u.empresa_id, u);
+}
+
+function iniciarPrueba() {
+  PRUEBA = true;
+  $('#pruebaNota').hidden = false;
+  const db = PruebaDB.leer();
+  if (EMP) return entrarEmpresaPrueba(db, +EMP, null);   // "Ver panel" desde el administrador
+  const u = db.usuarios.find(x => x.id == sesion.get() && x.activo);
+  if (u) return entrarEmpresaPrueba(db, u.empresa_id, u);
+  showLogin();
 }
 
 async function startReal() {
@@ -353,17 +396,21 @@ $('#loginForm').addEventListener('submit', async e => {
   e.preventDefault();
   const f = new FormData(e.target);
   $('#loginErr').textContent = '';
+  if (PRUEBA) return loginPrueba(f.get('email'), f.get('password'));
   const {status, d} = await api('api/auth.php', {email: f.get('email'), password: f.get('password')});
   if (status == 200) { showUser(d); startReal().catch(err => showLogin('No se pudieron cargar los datos.')); }
   else showLogin(d.error || 'No se pudo ingresar.');
 });
-$('#verDemo').addEventListener('click', startDemo);
-$('#salir').addEventListener('click', async () => { await api('api/auth.php', {accion: 'salir'}); location.href = location.pathname; });
+$('#verDemo').addEventListener('click', () => startDemo());
+$('#salir').addEventListener('click', async () => {
+  if (PRUEBA) sesion.set(null); else await api('api/auth.php', {accion: 'salir'});
+  location.href = location.pathname;
+});
 
 (async () => {
   let r;
-  try { r = await api('api/auth.php'); } catch (e) { return startDemo(); }  // sin API: demo
-  if (r.status == 200 && !r.d.rol) startDemo();  // el servidor no ejecuta PHP: demo
+  try { r = await api('api/auth.php'); } catch (e) { return iniciarPrueba(); }  // sin servidor: modo prueba
+  if (r.status == 200 && !r.d.rol) iniciarPrueba();  // el servidor no ejecuta PHP: modo prueba
   else if (r.status == 200) {
     showUser(r.d);
     if (r.d.rol == 'admin' && !EMP) { location.href = 'admin.html'; return; }

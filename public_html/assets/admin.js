@@ -8,20 +8,9 @@ let D = null, sel = null, PRUEBA = false;
 
 /* ---------- Modo prueba ----------
  * Imita a api/admin.php dentro del navegador, sin servidor ni base de datos.
- * Los datos quedan solo en este navegador (localStorage) y se pueden borrar desde el aviso de arriba.
+ * Los datos (PruebaDB, en ui.js) quedan solo en este navegador y los comparte el panel del salamero.
  */
-const KEY = 'salame_admin_prueba';
-// Hora local "AAAA-MM-DD HH:MM:SS", igual que la devuelve MySQL
-const hoy = (min = 0) => new Date(Date.now() - min * 60000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19).replace('T', ' ');
-function semilla() {
-  return {n: 3, empresas: [{id: 1, nombre: 'Chacinados de prueba', contacto: '3572 000000', estado: 'activa', creada: hoy()}],
-    camaras: [
-      {id: 1, empresa_id: 1, nombre: 'Cámara 1 · Secado', etapa: 'Secado', t_min: 12, t_max: 15, h_min: 75, h_max: 85, activa: true, ultima_lectura: hoy(3)},
-      {id: 2, empresa_id: 1, nombre: 'Cámara 2 · Estufado', etapa: 'Estufado', t_min: 20, t_max: 24, h_min: 88, h_max: 95, activa: true, ultima_lectura: hoy(95)}],
-    usuarios: [{id: 3, empresa_id: 1, email: 'encargado@prueba.com', nombre: 'Encargado', activo: true, ultimo_login: null}]};
-}
-const leerPrueba = () => { try { return JSON.parse(localStorage.getItem(KEY)) || semilla(); } catch (e) { return semilla(); } };
-const guardarPrueba = db => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} };
+const {hoy, leer: leerPrueba, guardar: guardarPrueba, borrar: borrarPrueba} = PruebaDB;
 const azar = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
 
 function apiPrueba(body, silencioso) {
@@ -45,9 +34,11 @@ function apiPrueba(body, silencioso) {
       emp(b.empresa_id);
       if (!/^\S+@\S+\.\S+$/.test(b.email || '')) err('Mail inválido');
       if (db.usuarios.some(u => u.email == b.email.toLowerCase())) err('Ya existe un usuario con ese mail');
-      r.email = b.email.toLowerCase(); r.password = azar(7);
-      db.usuarios.push({id: nid(), empresa_id: +b.empresa_id, email: r.email, nombre: b.nombre || r.email, activo: true, ultimo_login: null}); break;
-    case 'usuario_clave': r.password = azar(7); break;
+      r.email = b.email.toLowerCase(); r.password = azar(4);
+      // Solo en modo prueba se guarda la contraseña tal cual, para poder entrar al panel del salamero.
+      // El servidor real guarda únicamente el hash.
+      db.usuarios.push({id: nid(), empresa_id: +b.empresa_id, email: r.email, nombre: b.nombre || r.email, activo: true, ultimo_login: null, pass: r.password}); break;
+    case 'usuario_clave': r.password = azar(4); db.usuarios.find(u => u.id == id).pass = r.password; break;
     case 'usuario_activo': db.usuarios.find(u => u.id == id).activo = !!b.activo; break;
     case 'camara_crear':
       emp(b.empresa_id);
@@ -66,6 +57,9 @@ function apiPrueba(body, silencioso) {
   guardarPrueba(db);
   return r;
 }
+
+// En modo prueba, link para probar el ingreso del salamero con los datos recién creados
+const probar = () => PRUEBA ? ' <a class="probar" href="index.html" target="_blank">Probar el ingreso del salamero ›</a>' : '';
 
 function entrarPrueba() {
   PRUEBA = true;
@@ -185,7 +179,7 @@ $('#fEmpresa').addEventListener('submit', e => { e.preventDefault(); enviar(e.ta
   sel = r.id;
   if (f.email) {
     const u = await api({accion: 'usuario_crear', empresa_id: r.id, email: f.email, nombre: f.responsable}, true);
-    secreto(`Cliente creado. Pasale al salamero estos datos para entrar: Mail <code>${esc(u.email)}</code> · Contraseña <code>${esc(u.password)}</code>`);
+    secreto(`Cliente creado. Pasale al salamero estos datos para entrar: Mail <code>${esc(u.email)}</code> · Contraseña <code>${esc(u.password)}</code>${probar()}`);
   }
 }); });
 
@@ -196,7 +190,7 @@ $('#fCamara').addEventListener('submit', e => { e.preventDefault(); enviar(e.tar
 
 $('#fUsuario').addEventListener('submit', e => { e.preventDefault(); enviar(e.target, async f => {
   const r = await api({accion: 'usuario_crear', empresa_id: sel, ...f}, true);
-  secreto(`Usuario creado. Mail: <code>${esc(r.email)}</code> · Contraseña: <code>${esc(r.password)}</code>`);
+  secreto(`Usuario creado. Mail: <code>${esc(r.email)}</code> · Contraseña: <code>${esc(r.password)}</code>${probar()}`);
 }); });
 
 $('#detalle').addEventListener('click', async e => {
@@ -223,7 +217,7 @@ $('#detalle').addEventListener('click', async e => {
     await api({accion: 'camara_editar', id, t_min, t_max, h_min, h_max});
   } else if (a == 'clave') {
     const r = await api({accion: 'usuario_clave', id});
-    secreto(`Contraseña nueva: <code>${esc(r.password)}</code>`);
+    secreto(`Contraseña nueva: <code>${esc(r.password)}</code>${probar()}`);
   } else if (a == 'uactivo') {
     const u = D.usuarios.find(x => x.id == id);
     await api({accion: 'usuario_activo', id, activo: !u.activo});
@@ -234,7 +228,7 @@ $('#detalle').addEventListener('click', async e => {
 $('#verPrueba').addEventListener('click', entrarPrueba);
 $('#borrarPrueba').addEventListener('click', () => {
   if (!confirm('¿Borrar todas las empresas, cámaras y usuarios de prueba?')) return;
-  try { localStorage.removeItem(KEY); } catch (e) {}
+  borrarPrueba();
   sel = null; cargar();
 });
 

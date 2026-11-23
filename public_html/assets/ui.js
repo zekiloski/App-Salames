@@ -44,6 +44,32 @@ document.body.insertAdjacentHTML('afterbegin',
 // ic('gota') → <svg> con el ícono. Siempre va acompañado de texto, así que se oculta a lectores de pantalla.
 window.ic = (n, cls = '') => `<svg class="ic ${cls}" aria-hidden="true" focusable="false"><use href="#i-${n}"/></svg>`;
 
+/* ---------- Datos del modo prueba (sin servidor) ----------
+ * Los usa el administrador para dar de alta clientes y el panel del salamero para entrar con esos usuarios.
+ * Quedan solo en este navegador (localStorage).
+ */
+const KEY = 'salame_admin_prueba';
+// Hora local "AAAA-MM-DD HH:MM:SS", igual que la devuelve MySQL
+const hoy = (min = 0) => new Date(Date.now() - min * 60000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19).replace('T', ' ');
+const semilla = () => ({n: 3, empresas: [{id: 1, nombre: 'Chacinados de prueba', contacto: '3572 000000', estado: 'activa', creada: hoy()}],
+  camaras: [
+    {id: 1, empresa_id: 1, nombre: 'Cámara 1 · Secado', etapa: 'Secado', t_min: 12, t_max: 15, h_min: 75, h_max: 85, activa: true, ultima_lectura: hoy(3)},
+    {id: 2, empresa_id: 1, nombre: 'Cámara 2 · Estufado', etapa: 'Estufado', t_min: 20, t_max: 24, h_min: 88, h_max: 95, activa: true, ultima_lectura: hoy(95)}],
+  usuarios: [{id: 3, empresa_id: 1, email: 'encargado@prueba.com', nombre: 'Encargado', activo: true, ultimo_login: null, pass: 'prueba123'}]});
+window.PruebaDB = {
+  hoy,
+  leer() {
+    let db = null;
+    try { db = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+    db = db || semilla();
+    // Datos guardados antes de que existiera la contraseña de prueba
+    for (const u of db.usuarios) if (!u.pass && u.email == 'encargado@prueba.com') u.pass = 'prueba123';
+    return db;
+  },
+  guardar(db) { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} },
+  borrar() { try { localStorage.removeItem(KEY); } catch (e) {} }
+};
+
 /* ---------- Menú lateral (celulares) ---------- */
 const btn = document.getElementById('menuBtn'), menu = document.getElementById('menu'), scrim = document.getElementById('scrim');
 if (btn && menu) {
