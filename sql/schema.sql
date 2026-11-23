@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS lotes (
   camara_id       INT UNSIGNED NOT NULL,
   etapa           VARCHAR(40)  NOT NULL DEFAULT 'Estufado',
   fecha_inicio    DATE         NOT NULL,
-  kg              DECIMAL(8,1) NOT NULL,
+  kg              DECIMAL(8,1) NOT NULL,          -- kilos embutidos (peso fresco al embutir)
+  piezas          INT UNSIGNED NULL,              -- cantidad de piezas embutidas
   peso_inicial_g  DECIMAL(8,1) NOT NULL,         -- peso de la vara testigo el día 0
   meta_perdida    DECIMAL(4,1) NOT NULL DEFAULT 33.0,
   origen          VARCHAR(160) NULL,

@@ -80,7 +80,8 @@
 </section>
 
 <section class="view band" id="v-lotes">
-  <div class="row"><h2>Lotes en proceso</h2><span class="sub" style="color:var(--mut)">Tocá un lote para ver qué le pasa, su curva y la ficha de trazabilidad</span></div>
+  <div class="row"><h2>Lotes en proceso</h2><button class="btn pri" id="nuevoLote"><svg class="ic" aria-hidden="true"><use href="#i-mas"/></svg>Nuevo lote</button></div>
+  <p class="note" style="margin-top:-6px">Tocá un lote para ver qué le pasa, su curva y la ficha de trazabilidad.</p>
   <div class="leyenda" id="leyenda"></div>
   <div class="panel">
     <table class="stack"><thead><tr><th>Estado</th><th>Lote</th><th>Producto</th><th>Etapa</th><th>Día</th><th>Pérdida de peso</th><th>Avance vs. meta</th></tr></thead><tbody id="lots"></tbody></table>
@@ -107,6 +108,45 @@
   </div>
 </section>
 </main>
+<dialog class="modal" id="mLote" aria-labelledby="mLoteT">
+  <form class="form" id="fLote" novalidate>
+    <div class="modal-head"><h2 id="mLoteT"><svg class="ic" aria-hidden="true"><use href="#i-lote"/></svg>Nuevo lote</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+
+    <fieldset class="opcional">
+      <legend>1. Qué se embutió</legend>
+      <label>Producto *<input name="producto" required list="productos" placeholder="Ej.: Salame tipo Oncativo · calibre 50"></label>
+      <datalist id="productos"><option>Salame tipo Oncativo · calibre 40</option><option>Salame tipo Oncativo · calibre 50</option><option>Salame tipo Oncativo · calibre 70</option><option>Salamín picado fino</option><option>Salame picado grueso</option><option>Bondiola curada</option><option>Longaniza</option></datalist>
+      <div class="dos">
+        <label>Cantidad de piezas<input name="piezas" type="number" inputmode="numeric" min="1" step="1" placeholder="Ej.: 1200"></label>
+        <label>Kilos embutidos *<input name="kg" type="number" inputmode="decimal" min="0.1" step="0.1" required placeholder="Ej.: 420"></label>
+      </div>
+      <p class="note calc" id="calcLote"></p>
+      <label>Fecha de embutido *<input name="fecha_inicio" type="date" required></label>
+      <label>Código de lote *<input name="codigo" required maxlength="30" autocomplete="off"></label>
+      <p class="note">Va en la etiqueta y en el QR. Lo sugerimos solo, podés cambiarlo.</p>
+    </fieldset>
+
+    <fieldset class="opcional">
+      <legend>2. Dónde se estaciona</legend>
+      <div class="dos">
+        <label>Cámara *<select name="camara_id" required></select></label>
+        <label>Etapa<select name="etapa"><option>Estufado</option><option>Secado</option><option>Estacionamiento</option></select></label>
+      </div>
+      <label>Peso de la vara testigo hoy (gramos) *<input name="peso_inicial_g" type="number" inputmode="decimal" min="1" step="0.1" required placeholder="Ej.: 5200"></label>
+      <p class="note" id="pesoBalanza">Colgá la vara testigo de este lote en la balanza de la cámara y anotá el peso. Con ese dato la app calcula cuánto peso va perdiendo.</p>
+      <label>Meta de pérdida de peso (%)<input name="meta_perdida" type="number" inputmode="decimal" min="1" max="60" step="0.5" value="33"></label>
+    </fieldset>
+
+    <fieldset class="opcional">
+      <legend>3. Origen <span>(opcional)</span></legend>
+      <label>Origen del cerdo<input name="origen" placeholder="Ej.: Granja Los Álamos, Oncativo · Duroc"></label>
+    </fieldset>
+
+    <p class="err" role="alert"></p>
+    <div class="acciones"><button type="button" class="btn" data-cerrar>Cancelar</button><button type="submit" class="btn pri">Guardar lote</button></div>
+  </form>
+</dialog>
+
 <script src="assets/ui.js"></script>
 <script src="assets/app.js"></script>
 </body>

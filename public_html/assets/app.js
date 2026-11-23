@@ -114,6 +114,7 @@ function demoState(propias) {
     L('L-2611-03', 'Salamín picado fino', 'Estufado', 2, 2, 4.2, 30, 260, 0),
     L('L-2610-07', 'Salame tipo Oncativo · calibre 50', 'Estacionamiento', 3, 24, 29.1, 33, 510, 0, 4),
     L('L-2610-05', 'Bondiola curada', 'Estacionamiento', 3, 31, 33.4, 33, 190, 0)];
+  lotes.forEach(l => { l.piezas = Math.round(l.kg / 0.35); });   // ~350 g por pieza
   // Con cámaras propias, los lotes de ejemplo se reparten entre ellas (sin cámaras no hay lotes)
   if (propias) lotes = camaras.length ? lotes.map((l, i) => ({...l, camara_id: camaras[i % camaras.length].id})) : [];
   const c1 = camaras.length ? camaras[0].nombre : 'Cámara 1';
@@ -221,7 +222,7 @@ const tagCls = st => st == 'Estufado' ? 'tag f' : st == 'Secado' ? 'tag' : 'tag 
 function renderLots() {
   $('#lots').innerHTML = S.lotes.length ? S.lotes.map((l, i) => {
     const pct = Math.min(100, l.perdida / l.meta * 100), d = diagnostico(l);
-    return `<tr class="click" data-i="${i}" tabindex="0"><td>${estado(d.nivel)}</td><td><b>${esc(l.codigo)}</b></td><td>${esc(l.producto)}</td><td><span class="${tagCls(l.etapa)}">${esc(l.etapa)}</span></td><td class="n">${l.dia}</td><td class="n">${l.perdida.toFixed(1)} % de ${l.meta} %</td><td><div class="meter"><i class="${NIVEL[d.nivel].cls}" style="width:${pct}%"></i></div></td></tr>`;
+    return `<tr class="click" data-i="${i}" tabindex="0"><td>${estado(d.nivel)}</td><td><b>${esc(l.codigo)}</b></td><td>${esc(l.producto)}<br><small class="cant">${cantidad(l)}</small></td><td><span class="${tagCls(l.etapa)}">${esc(l.etapa)}</span></td><td class="n">${l.dia}</td><td class="n">${l.perdida.toFixed(1)} % de ${l.meta} %</td><td><div class="meter"><i class="${NIVEL[d.nivel].cls}" style="width:${pct}%"></i></div></td></tr>`;
   }).join('') : '<tr><td colspan="7">No hay lotes cargados.</td></tr>';
   renderResumen();
 }
@@ -239,10 +240,18 @@ function qr(seed) {
   return `<svg class="qr" viewBox="-1 -1 13 13" aria-label="Código del lote"><rect x="-1" y="-1" width="13" height="13" fill="#fff"/><g fill="#1d1214">${r}</g></svg>`;
 }
 
+// Días que faltan para la meta: con el ritmo de los últimos 3 días si hay datos; si no, con la curva de referencia
+function diasRestantes(l) {
+  if (l.perdida >= l.meta) return 0;
+  const c = l.curva || [], ult = c[c.length - 1], hace3 = c.filter(p => p.dia <= l.dia - 3).pop();
+  if (l.dia >= 5 && ult && hace3 && ult.perdida > hace3.perdida) return Math.ceil((l.meta - l.perdida) / ((ult.perdida - hace3.perdida) / (ult.dia - hace3.dia)));
+  return l.dia < DIAS_META ? DIAS_META - l.dia : null;
+}
+
 let lotRO = null;
 function showLot(i) {
   const l = S.lotes[i]; if (!l) return;
-  const left = Math.max(0, Math.round((l.meta - l.perdida) / 0.5)), d = diagnostico(l);
+  const d = diagnostico(l), left = diasRestantes(l);
   const coma = v => v.toFixed(1).replace('.', ',');
   $('#detail').innerHTML = `<div class="panel diag ${NIVEL[d.nivel].cls}">
     <h3>${estado(d.nivel)} ${esc(l.codigo)} · ¿cómo va el estacionamiento?</h3>
@@ -251,9 +260,10 @@ function showLot(i) {
   </div>
   <div class="panel"><h3>${ic('balanza')}Curva de pérdida de peso</h3><div class="fig" style="min-height:280px"><svg id="lc" role="img" aria-label="Pérdida de peso real comparada con la esperada"></svg></div><div class="legend"><span><i style="background:var(--red)"></i>Real (vara testigo)</span><span><i style="background:var(--mut)"></i>Esperada</span><span><i style="background:var(--tint-ok);height:10px"></i>Zona normal</span></div></div>
   <div class="ficha">${qr(l.codigo)}<h3>Ficha de trazabilidad</h3><dl>
-  <dt>Lote</dt><dd>${esc(l.codigo)}</dd><dt>Producto</dt><dd>${esc(l.producto)}</dd><dt>Kilos embutidos</dt><dd>${l.kg} kg</dd>
+  <dt>Lote</dt><dd>${esc(l.codigo)}</dd><dt>Producto</dt><dd>${esc(l.producto)}</dd><dt>Embutido</dt><dd>${cantidad(l)}${l.fecha_inicio ? ' · ' + fechaTxt(l.fecha_inicio) : ''}</dd>
+  <dt>Kilos hoy (estimado)</dt><dd>${miles(l.kg * (1 - l.perdida / 100), 0)} kg</dd>
   <dt>Etapa actual</dt><dd>${esc(l.etapa)} · día ${l.dia}</dd><dt>Pérdida de peso</dt><dd>${l.perdida.toFixed(1)} % (meta ${l.meta} %)</dd>
-  <dt>Horas fuera de rango</dt><dd>${String(l.horas_fuera).replace('.', ',')} h</dd><dt>Estimado listo</dt><dd>${left ? 'en ' + left + ' días aprox.' : 'listo para revisar'}</dd>
+  <dt>Horas fuera de rango</dt><dd>${String(l.horas_fuera).replace('.', ',')} h</dd><dt>Estimado listo</dt><dd>${left === 0 ? 'listo para revisar' : left ? 'en ' + left + ' días aprox.' : 'todavía sin datos suficientes'}</dd>
   <dt>Origen cerdo</dt><dd>${esc(l.origen || '–')}</dd></dl>
   <p class="note">El QR va en la etiqueta: el comprador lo escanea y ve el recorrido del lote. Sirve como respaldo para la denominación de origen.</p></div>`;
   const s = $('#lc');
@@ -279,6 +289,14 @@ function showLot(i) {
 }
 
 function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c])); }
+// 1234.5 → "1.234,5" (formato argentino)
+const miles = (v, dec = 1) => Number(v).toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: dec});
+const fechaTxt = f => f.split('-').reverse().join('/');
+const cantidad = l => `${miles(l.kg)} kg` + (l.piezas ? ` · ${miles(l.piezas, 0)} piezas` : '');
+const hoyISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+// Lote cargado en el navegador (demo / modo prueba): todavía sin lecturas de la balanza
+const loteLocal = l => ({...l, dia: Math.max(0, Math.round((new Date(hoyISO()) - new Date(l.fecha_inicio)) / 864e5)),
+  perdida: 0, horas_fuera: 0, curva: [{dia: 0, perdida: 0}]});
 function hora() { return new Date().toTimeString().slice(0, 5); }
 
 function fillCams() {
@@ -337,6 +355,75 @@ $('#guia').innerHTML = `<div class="panel"><h3>Los cuatro estados de un lote</h3
 $('#mats').innerHTML = MATS.map(m => `<div class="mat">${ic(m[0], 'grande c-red')}<div class="k">${m[1]}</div><h3>${m[2]}</h3><p>${m[3]}</p><p class="note"><b>Cantidad:</b> ${m[4]}</p></div>`).join('');
 $('#params').innerHTML = PARAMS.map(p => `<tr><td>${p[0]}</td><td class="n">${p[1]}</td><td class="n">${p[2]}</td><td>${p[3]}</td></tr>`).join('');
 
+/* ---------- Nuevo lote ---------- */
+const fL = $('#fLote'), mL = $('#mLote');
+mL.querySelectorAll('[data-cerrar]').forEach(b => b.addEventListener('click', () => mL.close()));
+mL.addEventListener('click', e => { if (e.target == mL) mL.close(); });
+
+// Código sugerido: L-AAMM-NN (año, mes y número de lote del mes)
+function codigoSugerido(fecha) {
+  const pre = 'L-' + fecha.slice(2, 4) + fecha.slice(5, 7) + '-';
+  const n = S.lotes.filter(l => l.codigo.startsWith(pre)).map(l => +l.codigo.slice(pre.length) || 0);
+  return pre + String((n.length ? Math.max(...n) : 0) + 1).padStart(2, '0');
+}
+function pesoDeCamara() {
+  const c = S.camaras.find(x => x.id == fL.camara_id.value), nota = $('#pesoBalanza');
+  if (c && c.peso_g) {
+    fL.peso_inicial_g.value = c.peso_g;
+    nota.textContent = `La balanza de ${c.nombre} marca ${miles(c.peso_g)} g ahora. Si la vara testigo ya es la de este lote, dejalo así.`;
+  } else nota.textContent = 'Colgá la vara testigo de este lote en la balanza de la cámara y anotá el peso. Con ese dato la app calcula cuánto peso va perdiendo.';
+  const et = ['Estufado', 'Secado', 'Estacionamiento'].find(x => c && c.nombre.toLowerCase().includes(x.toLowerCase()));
+  if (et) fL.etapa.value = et;
+}
+function calcLote() {
+  const kg = +fL.kg.value, pz = +fL.piezas.value, meta = +fL.meta_perdida.value || 33;
+  $('#calcLote').innerHTML = kg > 0
+    ? `${pz > 0 ? `Promedio <b>${miles(kg / pz * 1000, 0)} g por pieza</b> al embutir. ` : ''}Al llegar a la meta quedan unos <b>${miles(kg * (1 - meta / 100), 0)} kg</b>${pz > 0 ? ` (≈ ${miles(kg * (1 - meta / 100) / pz * 1000, 0)} g por pieza)` : ''}.`
+    : '';
+}
+$('#nuevoLote').addEventListener('click', () => {
+  if (!S || !S.camaras.length) { alert('Primero hay que tener al menos una cámara cargada.'); return; }
+  fL.reset(); mL.querySelector('.err').textContent = '';
+  fL.camara_id.innerHTML = S.camaras.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+  fL.camara_id.value = C().id;
+  fL.fecha_inicio.value = hoyISO(); fL.fecha_inicio.max = hoyISO();
+  fL.codigo.value = codigoSugerido(hoyISO());
+  pesoDeCamara(); calcLote();
+  mL.showModal(); fL.producto.focus();
+});
+fL.camara_id.addEventListener('change', pesoDeCamara);
+fL.fecha_inicio.addEventListener('change', () => { if (/^L-\d{4}-\d{2}$/.test(fL.codigo.value)) fL.codigo.value = codigoSugerido(fL.fecha_inicio.value); });
+['kg', 'piezas', 'meta_perdida'].forEach(k => fL[k].addEventListener('input', calcLote));
+
+fL.addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = mL.querySelector('.err'), btn = fL.querySelector('[type=submit]'), f = Object.fromEntries(new FormData(fL));
+  const falta = [['producto', 'el producto'], ['kg', 'los kilos embutidos'], ['fecha_inicio', 'la fecha de embutido'], ['codigo', 'el código de lote'], ['peso_inicial_g', 'el peso de la vara testigo']]
+    .find(([k]) => !String(f[k] || '').trim());
+  if (falta) { err.textContent = 'Falta ' + falta[1] + '.'; fL[falta[0]].focus(); return; }
+  if (!(+f.kg > 0)) { err.textContent = 'Los kilos embutidos tienen que ser mayores a 0.'; return; }
+  if (f.piezas && !(Number.isInteger(+f.piezas) && +f.piezas > 0)) { err.textContent = 'La cantidad de piezas tiene que ser un número entero.'; return; }
+  if (!(+f.peso_inicial_g > 0)) { err.textContent = 'El peso de la vara testigo tiene que ser mayor a 0.'; return; }
+  const lote = {codigo: f.codigo.trim(), producto: f.producto.trim(), camara_id: +f.camara_id, etapa: f.etapa, fecha_inicio: f.fecha_inicio,
+    kg: +f.kg, piezas: f.piezas ? +f.piezas : null, peso_inicial_g: +f.peso_inicial_g, meta: +f.meta_perdida || 33, origen: f.origen.trim() || null};
+
+  btn.disabled = true; err.textContent = '';
+  try {
+    if (modo == 'real') {
+      const {status, d} = await api('api/lotes.php' + (EMP ? '?empresa_id=' + encodeURIComponent(EMP) : ''), {...lote, meta_perdida: lote.meta});
+      if (status != 201) throw new Error(d.error || 'No se pudo guardar el lote.');
+      S = await loadReal();
+    } else {
+      if (S.lotes.some(l => l.codigo == lote.codigo)) throw new Error('Ya existe un lote con el código ' + lote.codigo);
+      S.lotes.push(loteLocal(lote));
+      if (PRUEBA && PRUEBA_EMP) { const db = PruebaDB.leer(); (db.lotes = db.lotes || []).push({...lote, empresa_id: PRUEBA_EMP}); PruebaDB.guardar(db); }
+    }
+    mL.close(); renderAll(); irA('lotes');
+    showLot(S.lotes.findIndex(l => l.codigo == lote.codigo));
+  } catch (ex) { err.textContent = ex.message; }
+  finally { btn.disabled = false; }
+});
+
 /* ---------- Arranque ---------- */
 // propias / empresa: cámaras y nombre de una empresa del modo prueba (si no, la demo general)
 function startDemo(propias, empresa) {
@@ -351,7 +438,7 @@ function startDemo(propias, empresa) {
  * Permite entrar con los usuarios creados en el modo prueba del administrador (PruebaDB, en ui.js).
  * Cada usuario ve solo las cámaras de su empresa, igual que en el servidor real.
  */
-let PRUEBA = false;
+let PRUEBA = false, PRUEBA_EMP = null;
 const SES = 'salame_prueba_uid';
 const sesion = {get: () => { try { return sessionStorage.getItem(SES); } catch (e) { return null; } },
   set: v => { try { v ? sessionStorage.setItem(SES, v) : sessionStorage.removeItem(SES); } catch (e) {} }};
@@ -361,7 +448,11 @@ function entrarEmpresaPrueba(db, empId, u) {
   if (!e) return showLogin('La empresa no existe.');
   if (u && e.estado != 'activa') { sesion.set(null); return showLogin('Cuenta suspendida. Comunicate con el proveedor del servicio.'); }
   showUser(u || {nombre: 'Administrador · vista del cliente', rol: 'admin'});
+  PRUEBA_EMP = empId;
   startDemo(db.camaras.filter(c => c.empresa_id == empId && c.activa), e.nombre);
+  // Lotes cargados por este cliente en el modo prueba (se suman a los de ejemplo)
+  S.lotes.push(...(db.lotes || []).filter(l => l.empresa_id == empId).map(loteLocal));
+  renderAll();
 }
 
 function loginPrueba(email, pass) {

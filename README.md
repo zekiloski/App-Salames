@@ -88,7 +88,11 @@ En `https://tudominio.com/admin.html`:
 
 ## 7. Cargar un lote
 
-Por ahora se carga con la API, con la sesión del usuario de la empresa:
+El salamero lo carga desde la app: **Lotes y trazabilidad → + Nuevo lote**. Carga producto, cantidad de piezas, kilos embutidos, fecha, cámara, peso de la vara testigo (si la balanza ya está funcionando, la app lo sugiere solo), meta de pérdida y origen del cerdo. La app calcula el peso promedio por pieza y cuántos kilos van a quedar al llegar a la meta.
+
+Si la base se instaló antes de este cambio, correr una vez `sql/migracion_lotes_piezas.sql`.
+
+También se puede cargar con la API, con la sesión del usuario de la empresa:
 
 ```bash
 # 1) iniciar sesión (guarda la cookie en cookies.txt)

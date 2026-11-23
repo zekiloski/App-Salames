@@ -20,7 +20,14 @@ if ($empresa === false) json_out(['error' => 'Empresa inexistente'], 404);
 $st = $pdo->prepare('SELECT id, nombre, etapa, t_min, t_max, h_min, h_max FROM camaras WHERE empresa_id = ? AND activa = 1 ORDER BY id');
 $st->execute([$emp]);
 $camaras = $st->fetchAll();
-foreach ($camaras as &$c) foreach (['t_min','t_max','h_min','h_max'] as $k) $c[$k] = (float)$c[$k];
+// Último peso de la balanza (últimas 3 h): se sugiere como peso inicial al cargar un lote nuevo
+$pesoSt = $pdo->prepare('SELECT peso_g FROM lecturas WHERE camara_id = ? AND peso_g IS NOT NULL AND ts > NOW() - INTERVAL 3 HOUR ORDER BY ts DESC LIMIT 1');
+foreach ($camaras as &$c) {
+    foreach (['t_min','t_max','h_min','h_max'] as $k) $c[$k] = (float)$c[$k];
+    $pesoSt->execute([$c['id']]);
+    $p = $pesoSt->fetchColumn();
+    $c['peso_g'] = $p === false ? null : (float)$p;
+}
 unset($c);
 
 // Lecturas últimas 48 h, reducidas a ~200 puntos por cámara
@@ -76,7 +83,8 @@ foreach ($lotesSt->fetchAll() as $l) {
     $lotes[] = [
         'codigo' => $l['codigo'], 'producto' => $l['producto'], 'etapa' => $l['etapa'],
         'camara_id' => (int)$l['camara_id'], 'dia' => $dia, 'perdida' => (float)$perdida,
-        'meta' => (float)$l['meta_perdida'], 'kg' => (float)$l['kg'], 'origen' => $l['origen'],
+        'meta' => (float)$l['meta_perdida'], 'kg' => (float)$l['kg'], 'piezas' => $l['piezas'] === null ? null : (int)$l['piezas'],
+        'fecha_inicio' => $l['fecha_inicio'], 'origen' => $l['origen'],
         'horas_fuera' => $horas, 'curva' => $curva,
     ];
 }

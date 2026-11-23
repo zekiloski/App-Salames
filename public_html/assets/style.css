@@ -270,3 +270,7 @@ h3>.ic{margin-right:8px}
 .prueba-nota a{color:var(--red);font-weight:600}
 .prueba-nota code{background:var(--card);padding:1px 5px;border-radius:5px;user-select:all}
 .secreto .probar{display:inline-block;margin-left:6px;color:var(--ok);font-weight:700}
+small.cant{color:var(--mut);font-size:13px}
+.modal .calc:empty{display:none}
+.modal .calc{background:var(--tint-ok);border-radius:8px;padding:8px 10px;color:var(--ink)}
+.modal legend{font-size:15px}
